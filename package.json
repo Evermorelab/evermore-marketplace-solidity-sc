@@ -1,0 +1,18 @@
+{
+  "name": "evermore-nft-marketplace-solidity",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "script": "node scripts/run.js"
+  },
+  "author": "Floriane Le Floch",
+  "license": "ISC",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^1.0.2",
+    "@nomiclabs/hardhat-ethers": "^2.2.1",
+    "@openzeppelin/contracts": "^4.8.0",
+    "ethers": "^5.7.2",
+    "hardhat": "^2.12.4"
+  }
+}

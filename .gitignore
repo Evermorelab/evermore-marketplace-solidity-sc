@@ -1,0 +1,17 @@
+# Ignore all node_modules directories
+**/node_modules/
+
+# Ignore Hardhat artifacts
+/artifacts/
+
+# Ignore Hardhat cache
+/cache/
+
+# Ignore Hardhat coverage
+/coverage/
+
+# Ignore Hardhat tmp
+/tmp/
+
+# Ignore Hardhat web3
+/web3/
