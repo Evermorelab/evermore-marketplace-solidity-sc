@@ -23,4 +23,19 @@ Install the dependencies:
 npm install
 ```
 
+## Dev
+After each change in your smart contracts, re-compile them using: `npx hardhat compile`
+
+You can run the test script with: `npm run script`
+
+## Deploy
+
+Deploy on testnet goerli:
+1. Set the variables in a .env file:
+```
+ALCHEMY_API_KEY=""
+GOERLI_PRIVATE_KEY="" // your account private key
+```
+2. Run `npx hardhat run scripts/deploy.js --network goerli`
+
 
