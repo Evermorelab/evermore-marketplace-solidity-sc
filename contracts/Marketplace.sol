@@ -1,7 +1,5 @@
 //SPDX-License-Identifier: UNLICENSED
 
-// Solidity files have to start with this pragma.
-// It will be used by the Solidity compiler to validate its version.
 pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
@@ -29,7 +27,7 @@ contract EvermoreMarketplace is ReentrancyGuard, Ownable {
   
     uint256 public EVERMORE_FEES = 2;
 
-    // save all the listing hapenning on the marketplace
+    // save all the listings hapenning on the marketplace
     struct Listing {
         uint256 price;
         address seller;
@@ -41,7 +39,8 @@ contract EvermoreMarketplace is ReentrancyGuard, Ownable {
     // State Variables
     mapping(address => mapping(uint256 => Listing)) private s_listings;
     mapping(address => uint256) private s_proceeds;
-
+    address[] public nft_addresses;
+    mapping(address => uint256[]) private _tokenIdPerAddress;
 
     /////////////////////
     ////// Events ///////
@@ -160,9 +159,11 @@ contract EvermoreMarketplace is ReentrancyGuard, Ownable {
         if (nft.getApproved(_tokenId) != address(this) && !nft.isApprovedForAll(msg.sender, address(this))) {
             revert NotApprovedForMarketplace();
         }
+        if (_tokenIdPerAddress[_nftAddress].length == 0) {
+          nft_addresses.push(_nftAddress);
+        }
+        _tokenIdPerAddress[_nftAddress].push(_tokenId);
         s_listings[_nftAddress][_tokenId] = Listing(_price, msg.sender, false, _nftAddress, _tokenId);
-        // _nftCount.increment();
-        // _nftsListed.increment();
 
         emit ItemRegistered(msg.sender, _nftAddress, _tokenId, _price);
     }
@@ -192,7 +193,6 @@ contract EvermoreMarketplace is ReentrancyGuard, Ownable {
         Listing storage listedItem = s_listings[_nftAddress][_tokenId];
         listedItem.currentlyListed = true;
         listedItem.price = _price;
-        // _nftsListed.increment();
   
         emit ItemListed(msg.sender, _nftAddress, _tokenId, _price);
     }
@@ -209,7 +209,6 @@ contract EvermoreMarketplace is ReentrancyGuard, Ownable {
     {
         Listing storage listedItem = s_listings[_nftAddress][_tokenId];
         listedItem.currentlyListed = false;
-        // _nftsListed.decrement();
         emit ItemCanceled(msg.sender, _nftAddress, _tokenId);
     }
 
@@ -241,13 +240,12 @@ contract EvermoreMarketplace is ReentrancyGuard, Ownable {
         nft.safeTransferFrom(seller, msg.sender, _tokenId);
         (address _creator, uint256 _royaltiesValue) = nft.royaltyInfo(_tokenId, msg.value);
 
-        // Calculate evermore fees
+        // Calculate Evermore fees
         uint256 _evermoreValue = SafeMath.div(SafeMath.mul(msg.value, EVERMORE_FEES), 100);
 
         s_proceeds[listedItem.seller] += msg.value.sub(_royaltiesValue).sub(_evermoreValue);
         listedItem.currentlyListed = false;
         listedItem.seller = msg.sender;
-        // _nftsListed.decrement();
         payable(_creator).transfer(_royaltiesValue);
         emit ItemBought(msg.sender, _nftAddress, _tokenId, listedItem.price);
     }
@@ -303,6 +301,80 @@ contract EvermoreMarketplace is ReentrancyGuard, Ownable {
     // Getter Functions //
     /////////////////////
 
+    /*
+     * @notice Method to returns all listed market items
+     * @param _nftAddress Address of NFT contract
+     * @param _tokenId Token ID of NFT
+     * @param _newPrice Price in Wei of the item
+     * TODO: to optimize or replace per graph
+     */
+    function fetchListedItems() public view returns (Listing[] memory) {
+      uint256 itemCount = 0;
+      uint256 currentIndex = 0;
+
+      for (uint256 i = 0; i < nft_addresses.length; i++) {
+        address _nftAddress = nft_addresses[i];
+        uint256[] memory ids = _tokenIdPerAddress[_nftAddress];
+        for (uint j = 0; j < ids.length; j++) {
+          Listing memory listing = s_listings[_nftAddress][ids[j]];
+          if (listing.currentlyListed) {
+            itemCount += 1;
+          }
+        }
+      }
+
+      Listing[] memory listedItems = new Listing[](itemCount);
+      for (uint256 i = 0; i < nft_addresses.length; i++) {
+        address _nftAddress = nft_addresses[i];
+        uint256[] memory ids = _tokenIdPerAddress[_nftAddress];
+        for (uint256 j = 0; j < ids.length; j++) {
+          Listing memory listing = s_listings[_nftAddress][ids[j]];
+          if (listing.currentlyListed) {
+            listedItems[currentIndex] = listing;
+            currentIndex += 1;
+          }
+        }
+      }
+      return listedItems;
+    }
+
+    /*
+     * @notice Method to returns all listed market items
+     * @param _nftAddress Address of NFT contract
+     * @param _tokenId Token ID of NFT
+     * @param _newPrice Price in Wei of the item
+     * TODO: to optimize or replace per graph
+     */
+    function fetchMyItems() public view returns (Listing[] memory) {
+      uint256 itemCount = 0;
+      uint256 currentIndex = 0;
+
+      for (uint256 i = 0; i < nft_addresses.length; i++) {
+        address _nftAddress = nft_addresses[i];
+        uint256[] memory ids = _tokenIdPerAddress[_nftAddress];
+        for (uint j = 0; j < ids.length; j++) {
+          Listing memory listing = s_listings[_nftAddress][ids[j]];
+          if (listing.seller == msg.sender) {
+            itemCount += 1;
+          }
+        }
+      }
+
+      Listing[] memory myItems = new Listing[](itemCount);
+      for (uint256 i = 0; i < nft_addresses.length; i++) {
+        address _nftAddress = nft_addresses[i];
+        uint256[] memory ids = _tokenIdPerAddress[_nftAddress];
+        for (uint256 j = 0; j < ids.length; j++) {
+          Listing memory listing = s_listings[_nftAddress][ids[j]];
+          if (listing.seller == msg.sender) {
+            myItems[currentIndex] = listing;
+            currentIndex += 1;
+          }
+        }
+      }
+      return myItems;
+    }
+
     function getNFTListing(address _nftAddress, uint256 _tokenId)
         external
         view
@@ -318,5 +390,4 @@ contract EvermoreMarketplace is ReentrancyGuard, Ownable {
     function getMarketplaceFees() public view returns (uint256) {
         return EVERMORE_FEES;
     }
-
 }

@@ -112,6 +112,9 @@ async function main() {
     await listItem(marketplace, evermoreNFT, owner, tokenIds[0], PRICE1)
     await listItem(marketplace, evermoreNFT, owner, tokenIds[1], PRICE1)
 
+    let listings = await marketplace.fetchListedItems()
+    console.log("listings", listings);
+
     await cancelListing(marketplace, evermoreNFT, owner, tokenIds[0])
 
     await updateListing(marketplace, evermoreNFT, owner, tokenIds[1], PRICE2)
@@ -137,6 +140,13 @@ async function main() {
     console.log("OWNER ACCOUNT", await ethers.provider.getBalance(owner.address))
     console.log("BUYER1 ACCOUNT", await ethers.provider.getBalance(buyer1.address))
     console.log("BUYER2 ACCOUNT", await ethers.provider.getBalance(buyer2.address))
+
+    listings = await marketplace.fetchListedItems()
+    console.log("listings", listings);
+    buyer2Items = await marketplace.connect(buyer2).fetchMyItems()
+    console.log("buyer2Items", buyer2Items);
+    ownerItems = await marketplace.connect(owner).fetchMyItems()
+    console.log("ownerItems", ownerItems);
 
   } catch(err) {
     console.log('Doh! ', err);
