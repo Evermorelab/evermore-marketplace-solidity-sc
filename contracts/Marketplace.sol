@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Royalty.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 error PriceNotMet(address nftAddress, uint256 tokenId, uint256 price);
 error ItemNotForSale(address nftAddress, uint256 tokenId);
@@ -22,14 +23,11 @@ error PriceMustBeAboveZero();
 error BuyOwnNFT(address nftAddress, uint256 tokenId);
 
 
-contract EvermoreMarketplace is ReentrancyGuard {
+contract EvermoreMarketplace is ReentrancyGuard, Ownable {
 
     using SafeMath for uint256;
   
     uint256 public EVERMORE_FEES = 2;
-    address payable private _marketOwner;
-    // Counters.Counter private _nftCount;
-    // Counters.Counter private _nftsListed;
 
     // save all the listing hapenning on the marketplace
     struct Listing {
@@ -49,12 +47,19 @@ contract EvermoreMarketplace is ReentrancyGuard {
     ////// Events ///////
     /////////////////////
 
-    event ItemListed(
+    event ItemRegistered(
         address indexed seller,
         address indexed nftAddress,
         uint256 indexed tokenId,
         uint256 price
     );
+
+    event ItemListed(
+        address indexed seller,
+        address indexed nftAddress,
+        uint256 indexed tokenId,
+        uint256 price
+    ) ;
 
     event ItemCanceled(
         address indexed seller,
@@ -68,6 +73,10 @@ contract EvermoreMarketplace is ReentrancyGuard {
         uint256 indexed tokenId,
         uint256 price
     );
+
+    event withdrawProceeded(address indexed seller);
+
+    event FeesSet();
 
 
     /////////////////////
@@ -155,7 +164,7 @@ contract EvermoreMarketplace is ReentrancyGuard {
         // _nftCount.increment();
         // _nftsListed.increment();
 
-        emit ItemListed(msg.sender, _nftAddress, _tokenId, _price);
+        emit ItemRegistered(msg.sender, _nftAddress, _tokenId, _price);
     }
 
     /*
@@ -265,6 +274,7 @@ contract EvermoreMarketplace is ReentrancyGuard {
         s_listings[_nftAddress][_tokenId].price = _newPrice;
         emit ItemListed(msg.sender, _nftAddress, _tokenId, _newPrice);
     }
+
     /*
      * @notice Method for withdrawing proceeds from sales
      */
@@ -276,6 +286,17 @@ contract EvermoreMarketplace is ReentrancyGuard {
         s_proceeds[msg.sender] = 0;
         (bool success, ) = payable(msg.sender).call{value: proceeds}("");
         require(success, "Transfer failed");
+        emit withdrawProceeded(msg.sender);
+    }
+
+    /////////////////////
+    // Setter Functions //
+    /////////////////////
+
+    function setEvermoreFees(uint256 _newFees) public onlyOwner {
+        require(_newFees > 0 ether, "Cannot set fees to zero");
+        EVERMORE_FEES = _newFees;
+        emit FeesSet();
     }
 
     /////////////////////
@@ -294,7 +315,7 @@ contract EvermoreMarketplace is ReentrancyGuard {
         return s_proceeds[_seller];
     }
 
-    function getMarketplaceFee() public view returns (uint256) {
+    function getMarketplaceFees() public view returns (uint256) {
         return EVERMORE_FEES;
     }
 
