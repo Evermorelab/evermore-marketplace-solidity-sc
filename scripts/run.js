@@ -26,14 +26,14 @@ async function approveTransfers(marketplace, nftContract, user) {
   }
 }
 
-async function newMintAndList(marketplace, evermoreNFT, listingFee, owner) {
+async function newMintAndRegister(marketplace, evermoreNFT, owner, price) {
   let mintTx = await evermoreNFT.connect(owner).mint(baseURI)
   const mintTxReceipt = await mintTx.wait(1)
   const tokenId = mintTxReceipt.events[0].args.tokenId
   console.log("check approved: ", await evermoreNFT.getApproved(tokenId));
   console.log("check isApprovedForAll: ", await evermoreNFT.isApprovedForAll(owner.address, marketplace.address));
 
-  await marketplace.connect(owner).listItem(evermoreNFT.address, tokenId, PRICE1, {value: listingFee})
+  await marketplace.connect(owner).registerItem(evermoreNFT.address, tokenId, price)
   await logListing(marketplace, evermoreNFT.address, tokenId)
   return tokenId
 }
@@ -50,17 +50,18 @@ async function updateListing(marketplace, evermoreNFT, owner, tokenId, newPrice)
   await logListing(marketplace, evermoreNFT.address, tokenId)
 }
 
-async function buyItem(marketplace, evermoreNFT, buyer, tokenId, price) {
+async function buyItem(marketplace, evermoreNFT, buyer, tokenId, price, marketplaceFee) {
   console.log(`--------- BUY 1 NFTs with ID ${tokenId} for ${price} ---------`)
   await logNftOwner(evermoreNFT, tokenId)
-  await marketplace.connect(buyer).buyItem(evermoreNFT.address, tokenId, {value: price})
+  console.log("price", price + marketplaceFee);
+  await marketplace.connect(buyer).buyItem(evermoreNFT.address, tokenId, {value: price + marketplaceFee})
   await logNftOwner(evermoreNFT, tokenId)
   await logListing(marketplace, evermoreNFT.address, tokenId)
 }
 
-async function relistItem(marketplace, evermoreNFT, owner, tokenId, price, listingFee) {
+async function listItem(marketplace, evermoreNFT, owner, tokenId, price) {
   console.log(`--------- LIST 2ND HAND NFTs with ID ${tokenId} for ${price} ---------`)
-  await marketplace.connect(owner).relistItem(evermoreNFT.address, tokenId, price, {value: listingFee})
+  await marketplace.connect(owner).listItem(evermoreNFT.address, tokenId, price)
   await logListing(marketplace, evermoreNFT.address, tokenId)
 }
 
@@ -98,15 +99,18 @@ async function main() {
 
     const nbToMint = 3
     let tokenIds = []
-    let listingFee = await marketplace.getListingFee()
-    listingFee = listingFee.toString()
+    let marketplaceFee = await marketplace.getMarketplaceFee()
+    marketplaceFee = marketplaceFee.toString()
 
-    console.log(`--------- MINT AND LIST ${nbToMint} NFTs ---------`)
+    console.log(`--------- MINT AND REGISTER ${nbToMint} NFTs ---------`)
     for (let i=0; i<nbToMint; i++) {
-      const tokenId = await newMintAndList(marketplace, evermoreNFT, listingFee, owner)
+      const tokenId = await newMintAndRegister(marketplace, evermoreNFT, owner, PRICE1)
       tokenIds.push(tokenId)
       console.log(`Minted and listed token ${tokenId} by owner ${IDENTITIES[owner]}`)
     }
+
+    await listItem(marketplace, evermoreNFT, owner, tokenIds[0], PRICE1)
+    await listItem(marketplace, evermoreNFT, owner, tokenIds[1], PRICE1)
 
     await cancelListing(marketplace, evermoreNFT, owner, tokenIds[0])
 
@@ -115,12 +119,12 @@ async function main() {
     const listing1 = await marketplace.getNFTListing(evermoreNFT.address, tokenIds[1])
     const nftPrice1 = listing1.price.toString()
 
-    await buyItem(marketplace, evermoreNFT, buyer1, tokenIds[1], nftPrice1)
+    await buyItem(marketplace, evermoreNFT, buyer1, tokenIds[1], nftPrice1, marketplaceFee)
 
-    await relistItem(marketplace, evermoreNFT, buyer1, tokenIds[1], PRICE1, listingFee)
+    await listItem(marketplace, evermoreNFT, buyer1, tokenIds[1], PRICE1)
     const listing2 = await marketplace.getNFTListing(evermoreNFT.address, tokenIds[1])
     const nftPrice2 = listing2.price.toString()
-    await buyItem(marketplace, evermoreNFT, buyer2, tokenIds[1], nftPrice2)
+    await buyItem(marketplace, evermoreNFT, buyer2, tokenIds[1], nftPrice2, marketplaceFee)
 
     console.log("to earn owner", await marketplace.getSellerProceeds(owner.address));
     console.log("to earn buyer1", await marketplace.getSellerProceeds(buyer1.address));

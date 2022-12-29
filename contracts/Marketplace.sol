@@ -26,7 +26,7 @@ contract EvermoreMarketplace is ReentrancyGuard {
 
     using SafeMath for uint256;
   
-    uint256 public LISTING_FEE = 0.0001 ether;
+    uint256 public EVERMORE_FEES = 2;
     address payable private _marketOwner;
     // Counters.Counter private _nftCount;
     // Counters.Counter private _nftsListed;
@@ -130,7 +130,36 @@ contract EvermoreMarketplace is ReentrancyGuard {
     /////////////////////
 
     /*
-     * @notice Method for listing a new NFT
+     * @notice Method for registering a new NFT into the marketplace
+     * @param _nftAddress Address of NFT contract
+     * @param _tokenId Token ID of NFT
+     */
+    function registerItem(
+        address _nftAddress,
+        uint256 _tokenId,
+        uint256 _price
+    )
+        public
+        notRegistered(_nftAddress, _tokenId)
+        isOwner(_nftAddress, _tokenId, msg.sender)
+    {
+        if (_price <= 0) {
+            revert PriceMustBeAboveZero();
+        }
+
+        IERC721 nft = IERC721(_nftAddress);
+        if (nft.getApproved(_tokenId) != address(this) && !nft.isApprovedForAll(msg.sender, address(this))) {
+            revert NotApprovedForMarketplace();
+        }
+        s_listings[_nftAddress][_tokenId] = Listing(_price, msg.sender, false, _nftAddress, _tokenId);
+        // _nftCount.increment();
+        // _nftsListed.increment();
+
+        emit ItemListed(msg.sender, _nftAddress, _tokenId, _price);
+    }
+
+    /*
+     * @notice Method to list for sale a NFT already known by the marketplace
      * @param _nftAddress Address of NFT contract
      * @param _tokenId Token ID of NFT
      * @param _price sale price for each item
@@ -141,48 +170,16 @@ contract EvermoreMarketplace is ReentrancyGuard {
         uint256 _price
     )
         public
-        payable
-        nonReentrant
-        notRegistered(_nftAddress, _tokenId)
-        isOwner(_nftAddress, _tokenId, msg.sender)
-    {
-        if (_price <= 0) {
-            revert PriceMustBeAboveZero();
-        }
-        require(msg.value == LISTING_FEE, "Not enough ether for listing fee");
-
-        IERC721 nft = IERC721(_nftAddress);
-        if (nft.getApproved(_tokenId) != address(this) && !nft.isApprovedForAll(msg.sender, address(this))) {
-            revert NotApprovedForMarketplace();
-        }
-        s_listings[_nftAddress][_tokenId] = Listing(_price, msg.sender, true, _nftAddress, _tokenId);
-        // _nftCount.increment();
-        // _nftsListed.increment();
-
-        emit ItemListed(msg.sender, _nftAddress, _tokenId, _price);
-    }
-
-    /*
-     * @notice Method for re-listing a an NFT already known by the marketplace
-     * @param _nftAddress Address of NFT contract
-     * @param _tokenId Token ID of NFT
-     * @param _price sale price for each item
-     */
-    function relistItem(
-        address _nftAddress,
-        uint256 _tokenId,
-        uint256 _price
-    )
-        public
-        payable
-        nonReentrant
         notListed(_nftAddress, _tokenId)
         isOwner(_nftAddress, _tokenId, msg.sender)
     {
         if (_price <= 0) {
             revert PriceMustBeAboveZero();
         }
-        require(msg.value == LISTING_FEE, "Not enough ether for listing fee");
+        IERC721 nft = IERC721(_nftAddress);
+        if (nft.getApproved(_tokenId) != address(this) && !nft.isApprovedForAll(msg.sender, address(this))) {
+            revert NotApprovedForMarketplace();
+        }
         Listing storage listedItem = s_listings[_nftAddress][_tokenId];
         listedItem.currentlyListed = true;
         listedItem.price = _price;
@@ -235,7 +232,10 @@ contract EvermoreMarketplace is ReentrancyGuard {
         nft.safeTransferFrom(seller, msg.sender, _tokenId);
         (address _creator, uint256 _royaltiesValue) = nft.royaltyInfo(_tokenId, msg.value);
 
-        s_proceeds[listedItem.seller] += msg.value.sub(_royaltiesValue);
+        // Calculate evermore fees
+        uint256 _evermoreValue = SafeMath.div(SafeMath.mul(msg.value, EVERMORE_FEES), 100);
+
+        s_proceeds[listedItem.seller] += msg.value.sub(_royaltiesValue).sub(_evermoreValue);
         listedItem.currentlyListed = false;
         listedItem.seller = msg.sender;
         // _nftsListed.decrement();
@@ -294,8 +294,8 @@ contract EvermoreMarketplace is ReentrancyGuard {
         return s_proceeds[_seller];
     }
 
-    function getListingFee() public view returns (uint256) {
-        return LISTING_FEE;
+    function getMarketplaceFee() public view returns (uint256) {
+        return EVERMORE_FEES;
     }
 
 }
