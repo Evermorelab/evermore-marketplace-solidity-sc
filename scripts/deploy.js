@@ -1,3 +1,6 @@
+const PRICE0 = ethers.utils.parseEther("0.6")
+const nbCollectionItems = 1000
+
 async function main() {
   const [deployer] = await ethers.getSigners();
 
@@ -11,7 +14,7 @@ async function main() {
   await marketplace.deployed()
 
   const evermoreNFTFactory = await ethers.getContractFactory("EvermoreNFT")
-  const evermoreNFT = await evermoreNFTFactory.deploy(marketplace.address)
+  const evermoreNFT = await evermoreNFTFactory.deploy(marketplace.address, PRICE0, nbCollectionItems)
   await evermoreNFT.deployed()
 
   console.log("marketplace address:", marketplace.address);
