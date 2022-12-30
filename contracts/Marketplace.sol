@@ -15,7 +15,7 @@ error NotRegistered(address nftAddress, uint256 tokenId);
 error AlreadyListed(address nftAddress, uint256 tokenId);
 error AlreadyRegistered(address nftAddress, uint256 tokenId);
 error NoProceeds();
-error NotOwner();
+error NotAuthorised();
 error NotApprovedForMarketplace();
 error PriceMustBeAboveZero();
 error BuyOwnNFT(address nftAddress, uint256 tokenId);
@@ -34,6 +34,7 @@ contract EvermoreMarketplace is ReentrancyGuard, Ownable {
         bool currentlyListed;
         address contractAddress;
         uint256 tokenId;
+        // add tokenURI ?
     }
 
     // State Variables
@@ -128,7 +129,20 @@ contract EvermoreMarketplace is ReentrancyGuard, Ownable {
         IERC721 nft = IERC721(_nftAddress);
         address owner = nft.ownerOf(_tokenId);
         if (_caller != owner) {
-            revert NotOwner();
+            revert NotAuthorised();
+        }
+        _;
+    }
+
+    modifier isOwnerOrContract(
+      address _nftAddress,
+      uint256 _tokenId,
+      address _caller
+    ){
+        IERC721 nft = IERC721(_nftAddress);
+        address owner = nft.ownerOf(_tokenId);
+        if (_caller != owner && _caller != _nftAddress) {
+            revert NotAuthorised();
         }
         _;
     }
@@ -145,27 +159,28 @@ contract EvermoreMarketplace is ReentrancyGuard, Ownable {
     function registerItem(
         address _nftAddress,
         uint256 _tokenId,
-        uint256 _price
+        uint256 _price,
+        address _owner
     )
-        public
+        external
         notRegistered(_nftAddress, _tokenId)
-        isOwner(_nftAddress, _tokenId, msg.sender)
+        isOwnerOrContract(_nftAddress, _tokenId, msg.sender)
     {
         if (_price <= 0) {
             revert PriceMustBeAboveZero();
         }
 
         IERC721 nft = IERC721(_nftAddress);
-        if (nft.getApproved(_tokenId) != address(this) && !nft.isApprovedForAll(msg.sender, address(this))) {
+        if (nft.getApproved(_tokenId) != address(this) && !nft.isApprovedForAll(_owner, address(this))) {
             revert NotApprovedForMarketplace();
         }
         if (_tokenIdPerAddress[_nftAddress].length == 0) {
           nft_addresses.push(_nftAddress);
         }
         _tokenIdPerAddress[_nftAddress].push(_tokenId);
-        s_listings[_nftAddress][_tokenId] = Listing(_price, msg.sender, false, _nftAddress, _tokenId);
+        s_listings[_nftAddress][_tokenId] = Listing(_price, _owner, false, _nftAddress, _tokenId);
 
-        emit ItemRegistered(msg.sender, _nftAddress, _tokenId, _price);
+        emit ItemRegistered(_owner, _nftAddress, _tokenId, _price);
     }
 
     /*

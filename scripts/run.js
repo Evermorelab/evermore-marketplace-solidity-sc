@@ -32,13 +32,12 @@ async function newMintAndRegister(marketplace, evermoreNFT, owner) {
   let tokenPrice = await evermoreNFT.getItemPrice()
   tokenPrice = ethers.utils.parseEther(ethers.utils.formatEther(tokenPrice.toString()))
 
-  let mintTx = await evermoreNFT.connect(owner).mint(baseURI, {value: tokenPrice})
+  let mintTx = await evermoreNFT.connect(owner).mint(baseURI, true, {value: tokenPrice})
   const mintTxReceipt = await mintTx.wait(1)
   const tokenId = mintTxReceipt.events[0].args.tokenId
   console.log("check approved: ", await evermoreNFT.getApproved(tokenId));
   console.log("check isApprovedForAll: ", await evermoreNFT.isApprovedForAll(owner.address, marketplace.address));
 
-  await marketplace.connect(owner).registerItem(evermoreNFT.address, tokenId, tokenPrice)
   await logListing(marketplace, evermoreNFT.address, tokenId)
   return tokenId
 }

@@ -12,6 +12,7 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Royalty.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "./Marketplace.sol";
 
 
 contract EvermoreNFT is ERC721URIStorage, ERC721Enumerable, ERC721Royalty, Ownable, ReentrancyGuard {
@@ -28,7 +29,7 @@ contract EvermoreNFT is ERC721URIStorage, ERC721Enumerable, ERC721Royalty, Ownab
     uint96 public royaltyPercentage;
     address public royaltyRecipient;
 
-    event NFTMinted(uint256 tokenId);
+    event NFTMinted(uint256 indexed tokenId);
     event RoyaltySet(uint96 percentage, address recipient);
     event FeesSet(uint256 newFees, address recipient);
     event SupplySet(uint256 newSupply);
@@ -40,7 +41,7 @@ contract EvermoreNFT is ERC721URIStorage, ERC721Enumerable, ERC721Royalty, Ownab
         itemSupply = _itemSupply;
     }
 
-    function mint(string memory _tokenURI) public payable nonReentrant{
+    function mint(string memory _tokenURI, bool register) public payable nonReentrant{
         require(_tokenIds.current() < itemSupply, "All items have been sold");
         require(itemPrice <= msg.value, "Not enough payment tokens sent");
 
@@ -53,6 +54,10 @@ contract EvermoreNFT is ERC721URIStorage, ERC721Enumerable, ERC721Royalty, Ownab
         _safeMint(msg.sender, _newTokenId);
         _setTokenURI(_newTokenId, _tokenURI);
         setApprovalForAll(marketplaceContract, true);
+        if (register) {
+            EvermoreMarketplace marketplace = EvermoreMarketplace(marketplaceContract);
+            marketplace.registerItem(address(this), _newTokenId, itemPrice, msg.sender);
+        }
         emit NFTMinted(_newTokenId);
     }
 
@@ -111,7 +116,6 @@ contract EvermoreNFT is ERC721URIStorage, ERC721Enumerable, ERC721Royalty, Ownab
     {
         require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
 
-        //string memory baseURI = _baseURI();
         return bytes(baseURI).length > 0 ? string(abi.encodePacked(baseURI, tokenId)) : "";
     }
 
