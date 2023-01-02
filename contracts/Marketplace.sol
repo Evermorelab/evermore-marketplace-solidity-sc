@@ -355,12 +355,39 @@ contract EvermoreMarketplace is ReentrancyGuard, Ownable {
 
     /*
      * @notice Method to returns all listed market items
-     * @param _nftAddress Address of NFT contract
-     * @param _tokenId Token ID of NFT
-     * @param _newPrice Price in Wei of the item
      * TODO: to optimize or replace per graph
      */
-    function fetchMyItems() public view returns (Listing[] memory) {
+    function fetchAllItems() public view returns (Listing[] memory) {
+      uint256 itemCount = 0;
+      uint256 currentIndex = 0;
+
+      for (uint256 i = 0; i < nft_addresses.length; i++) {
+        address _nftAddress = nft_addresses[i];
+        uint256[] memory ids = _tokenIdPerAddress[_nftAddress];
+        for (uint j = 0; j < ids.length; j++) {
+          itemCount += 1;
+        }
+      }
+
+      Listing[] memory _items = new Listing[](itemCount);
+      for (uint256 i = 0; i < nft_addresses.length; i++) {
+        address _nftAddress = nft_addresses[i];
+        uint256[] memory ids = _tokenIdPerAddress[_nftAddress];
+        for (uint256 j = 0; j < ids.length; j++) {
+          Listing memory listing = s_listings[_nftAddress][ids[j]];
+          _items[currentIndex] = listing;
+          currentIndex += 1;
+        }
+      }
+      return _items;
+    }
+
+    /*
+     * @notice Method to returns all items beloging to a specific address
+     * @param _userAddress
+     * TODO: to optimize or replace per graph
+     */
+    function fetchUserItems(address _userAddress) public view returns (Listing[] memory) {
       uint256 itemCount = 0;
       uint256 currentIndex = 0;
 
@@ -369,25 +396,29 @@ contract EvermoreMarketplace is ReentrancyGuard, Ownable {
         uint256[] memory ids = _tokenIdPerAddress[_nftAddress];
         for (uint j = 0; j < ids.length; j++) {
           Listing memory listing = s_listings[_nftAddress][ids[j]];
-          if (listing.seller == msg.sender) {
+          if (listing.seller == _userAddress) {
             itemCount += 1;
           }
         }
       }
 
-      Listing[] memory myItems = new Listing[](itemCount);
+      Listing[] memory _items = new Listing[](itemCount);
       for (uint256 i = 0; i < nft_addresses.length; i++) {
         address _nftAddress = nft_addresses[i];
         uint256[] memory ids = _tokenIdPerAddress[_nftAddress];
         for (uint256 j = 0; j < ids.length; j++) {
           Listing memory listing = s_listings[_nftAddress][ids[j]];
-          if (listing.seller == msg.sender) {
-            myItems[currentIndex] = listing;
+          if (listing.seller == _userAddress) {
+          _items[currentIndex] = listing;
             currentIndex += 1;
           }
         }
       }
-      return myItems;
+      return _items;
+    }
+
+    function fetchMyItems() public view returns (Listing[] memory) {
+      return fetchUserItems(msg.sender);
     }
 
     function getNFTListing(address _nftAddress, uint256 _tokenId)

@@ -110,6 +110,11 @@ async function main() {
       console.log(`Minted and listed token ${tokenId} by owner ${IDENTITIES[owner]}`)
     }
 
+    ownerItems = await marketplace.connect(owner).fetchMyItems()
+    console.log("ownerItems", ownerItems);
+
+    return
+
     await listItem(marketplace, evermoreNFT, owner, tokenIds[0], PRICE1)
     await listItem(marketplace, evermoreNFT, owner, tokenIds[1], PRICE1)
 
