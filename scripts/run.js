@@ -32,7 +32,7 @@ async function newMintAndRegister(marketplace, evermoreNFT, owner) {
   let tokenPrice = await evermoreNFT.getItemPrice()
   tokenPrice = ethers.utils.parseEther(ethers.utils.formatEther(tokenPrice.toString()))
 
-  let mintTx = await evermoreNFT.connect(owner).mint(baseURI, true, {value: tokenPrice})
+  let mintTx = await evermoreNFT.connect(owner).mint(true, {value: tokenPrice})
   const mintTxReceipt = await mintTx.wait(1)
   const tokenId = mintTxReceipt.events[0].args.tokenId
   console.log("check approved: ", await evermoreNFT.getApproved(tokenId));
@@ -94,6 +94,7 @@ async function main() {
     const evermoreNFT = await evermoreNFTFactory.deploy(marketplace.address, PRICE0, nbCollectionItems)
     await evermoreNFT.deployed()
     await evermoreNFT.setRoyalty(10, royaliesReceiver.address)
+    await evermoreNFT.setbaseURI(baseURI)
 
     // Making sure the marketplace can transfer all the users NFT
     await approveTransfers(marketplace, evermoreNFT, owner)
@@ -111,9 +112,6 @@ async function main() {
     }
 
     ownerItems = await marketplace.connect(owner).fetchMyItems()
-    console.log("ownerItems", ownerItems);
-
-    return
 
     await listItem(marketplace, evermoreNFT, owner, tokenIds[0], PRICE1)
     await listItem(marketplace, evermoreNFT, owner, tokenIds[1], PRICE1)

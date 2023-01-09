@@ -34,7 +34,6 @@ contract EvermoreMarketplace is ReentrancyGuard, Ownable {
         bool currentlyListed;
         address contractAddress;
         uint256 tokenId;
-        // add tokenURI ?
     }
 
     // State Variables

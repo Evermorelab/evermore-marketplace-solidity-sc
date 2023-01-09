@@ -5,7 +5,7 @@ require("dotenv").config();
 
 
 const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY;
-const GOERLI_PRIVATE_KEY = process.env.GOERLI_PRIVATE_KEY;
+const METAMASK_PRIVATE_KEY = process.env.METAMASK_PRIVATE_KEY;
 
 
 module.exports = {
@@ -13,7 +13,11 @@ module.exports = {
   networks: {
     goerli: {
       url: `https://eth-goerli.alchemyapi.io/v2/${ALCHEMY_API_KEY}`,
-      accounts: [GOERLI_PRIVATE_KEY]
-    }
-  }
+      accounts: [METAMASK_PRIVATE_KEY]
+    },
+    apothem: {
+      url: "https://erpc.apothem.network",
+      accounts: [METAMASK_PRIVATE_KEY],
+    },
+  },
 };

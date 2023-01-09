@@ -34,6 +34,7 @@ contract EvermoreNFT is ERC721URIStorage, ERC721Enumerable, ERC721Royalty, Ownab
     event FeesSet(uint256 newFees, address recipient);
     event SupplySet(uint256 newSupply);
     event PriceSet(uint256 newPrice);
+    event BaseURISet(string newBaseURI);
 
     constructor(address _marketplaceContract, uint256 _itemPrice, uint256 _itemSupply) ERC721("Evermore NFT", "EveNFT") {
         marketplaceContract = _marketplaceContract;
@@ -41,7 +42,7 @@ contract EvermoreNFT is ERC721URIStorage, ERC721Enumerable, ERC721Royalty, Ownab
         itemSupply = _itemSupply;
     }
 
-    function mint(string memory _tokenURI, bool register) public payable nonReentrant{
+    function mint(bool register) public payable nonReentrant{
         require(_tokenIds.current() < itemSupply, "All items have been sold");
         require(itemPrice <= msg.value, "Not enough payment tokens sent");
 
@@ -52,7 +53,7 @@ contract EvermoreNFT is ERC721URIStorage, ERC721Enumerable, ERC721Royalty, Ownab
         _tokenIds.increment();
         uint256 _newTokenId = _tokenIds.current();
         _safeMint(msg.sender, _newTokenId);
-        _setTokenURI(_newTokenId, _tokenURI);
+        _setTokenURI(_newTokenId, baseURI);
         setApprovalForAll(marketplaceContract, true);
         if (register) {
             EvermoreMarketplace marketplace = EvermoreMarketplace(marketplaceContract);
@@ -64,6 +65,11 @@ contract EvermoreNFT is ERC721URIStorage, ERC721Enumerable, ERC721Royalty, Ownab
     /////////////////////
     // Setter Functions //
     /////////////////////
+
+    function setbaseURI(string memory _newBaseURI) public onlyOwner {
+        baseURI = _newBaseURI;
+        emit BaseURISet(_newBaseURI);
+    }
 
     function setItemPrice(uint256 _newPrice) public onlyOwner {
         require(_newPrice > 0 ether, "Cannot set price to zero");
