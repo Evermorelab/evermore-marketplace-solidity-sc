@@ -30,12 +30,17 @@ You can run the test script with: `npm run script`
 
 ## Deploy
 
-Deploy on testnet goerli:
+Deploy on testnet apothem:
 1. Set the variables in a .env file:
 ```
-ALCHEMY_API_KEY=""
-GOERLI_PRIVATE_KEY="" // your account private key
+METAMASK_PRIVATE_KEY="" // your account private key
+
+// Values to deploy a collection
+MARKETPLACE_ADDRESS="0x36042AA54644ABc270c490EdA913d20F85a3A7F2"
+QUANTITY=750
+PRICE="0.05"
 ```
-2. Run `npx hardhat run scripts/deploy.js --network goerli`
+2. Run `npx hardhat run scripts/deploy.js --network apothem` to deploy the Marketplace
+3. Run `npx hardhat run scripts/deployCollection.js --network apothem` for each NFT collection you want to deploy. Make sure you add the deployed address into the Database. Make sure you setup the correct values in .env before deployment
 
 
