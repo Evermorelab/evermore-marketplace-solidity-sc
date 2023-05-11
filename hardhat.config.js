@@ -15,8 +15,8 @@ module.exports = {
       url: `https://eth-goerli.alchemyapi.io/v2/${ALCHEMY_API_KEY}`,
       accounts: [METAMASK_PRIVATE_KEY]
     },
-    apothem: {
-      url: "https://erpc.apothem.network",
+    sepolia: {
+      url: `https://eth-sepolia.g.alchemy.com/v2/${ALCHEMY_API_KEY}`,
       accounts: [METAMASK_PRIVATE_KEY],
     },
   },

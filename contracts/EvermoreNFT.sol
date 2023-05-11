@@ -23,8 +23,10 @@ contract EvermoreNFT is ERC721URIStorage, ERC721Enumerable, ERC721Royalty, Ownab
     address public marketplaceContract;
     address public feesRecipient;
     uint256 public EVERMORE_FEES = 2;
+    bool public registerMarketplace = true;
     uint256 public itemPrice;
     string public baseURI;
+    string public baseUID;
     uint256 public itemSupply;
     uint96 public royaltyPercentage;
     address public royaltyRecipient;
@@ -35,31 +37,30 @@ contract EvermoreNFT is ERC721URIStorage, ERC721Enumerable, ERC721Royalty, Ownab
     event SupplySet(uint256 newSupply);
     event PriceSet(uint256 newPrice);
     event BaseURISet(string newBaseURI);
+    event BaseUIDSet(string newBaseUID);
 
-    constructor(address _marketplaceContract, uint256 _itemPrice, uint256 _itemSupply) ERC721("Evermore NFT", "EveNFT") {
+    constructor(address _marketplaceContract, uint256 _itemPrice, uint256 _itemSupply, string memory _baseUID) ERC721("Evermore NFT", "EVMNFT") {
         marketplaceContract = _marketplaceContract;
         itemPrice = _itemPrice;
         itemSupply = _itemSupply;
+        setbaseUID(_baseUID);
     }
 
-    function mint(bool register) public payable nonReentrant{
-        require(_tokenIds.current() < itemSupply, "All items have been sold");
+    function mint(address _receiver, uint256 _tokenId) public payable nonReentrant{
         require(itemPrice <= msg.value, "Not enough payment tokens sent");
 
         // Send Evermore fees
         uint256 _evermoreValue = SafeMath.div(SafeMath.mul(msg.value, EVERMORE_FEES), 100);
         payable(feesRecipient).transfer(_evermoreValue);
 
-        _tokenIds.increment();
-        uint256 _newTokenId = _tokenIds.current();
-        _safeMint(msg.sender, _newTokenId);
-        _setTokenURI(_newTokenId, baseURI);
+        _safeMint(_receiver, _tokenId);
         setApprovalForAll(marketplaceContract, true);
-        if (register) {
+        if (registerMarketplace) {
+            string memory _tokenUID = tokenUID(_tokenId);
             EvermoreMarketplace marketplace = EvermoreMarketplace(marketplaceContract);
-            marketplace.registerItem(address(this), _newTokenId, itemPrice, msg.sender);
+            marketplace.registerItem(address(this), _tokenId, _tokenUID);
         }
-        emit NFTMinted(_newTokenId);
+        emit NFTMinted(_tokenId);
     }
 
     /////////////////////
@@ -69,6 +70,11 @@ contract EvermoreNFT is ERC721URIStorage, ERC721Enumerable, ERC721Royalty, Ownab
     function setbaseURI(string memory _newBaseURI) public onlyOwner {
         baseURI = _newBaseURI;
         emit BaseURISet(_newBaseURI);
+    }
+
+    function setbaseUID(string memory _newBaseUID) public onlyOwner {
+        baseUID = _newBaseUID;
+        emit BaseUIDSet(_newBaseUID);
     }
 
     function setItemPrice(uint256 _newPrice) public onlyOwner {
@@ -109,10 +115,6 @@ contract EvermoreNFT is ERC721URIStorage, ERC721Enumerable, ERC721Royalty, Ownab
         return itemPrice;
     }
 
-    function _baseURI() internal view virtual override(ERC721) returns (string memory) {
-        return baseURI;
-    }
-
     function tokenURI(uint256 tokenId)
         public
         view
@@ -123,6 +125,16 @@ contract EvermoreNFT is ERC721URIStorage, ERC721Enumerable, ERC721Royalty, Ownab
         require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
 
         return bytes(baseURI).length > 0 ? string(abi.encodePacked(baseURI, tokenId)) : "";
+    }
+
+    function tokenUID(uint256 tokenId)
+        public
+        view
+        virtual
+        returns (string memory)
+    {
+        require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
+        return bytes(baseUID).length > 0 ? string(abi.encodePacked(baseUID, tokenId)) : "";
     }
 
     ////////////////////////

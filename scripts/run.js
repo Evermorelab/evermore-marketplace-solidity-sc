@@ -1,6 +1,7 @@
 const { ethers } = require("hardhat")
 
 const baseURI =  "/ipfs/bafybeih6cahp6rwzlgy2tn5sdjo33hixvem6gn5yfbtn2okfdikncnjaua"
+const baseUID = "ASCG-98069-RD-"  // Random product code
 const PRICE0 = ethers.utils.parseEther("0.6")
 const PRICE1 = ethers.utils.parseEther("0.5")
 const PRICE2 = ethers.utils.parseEther("0.4")
@@ -9,12 +10,23 @@ const IDENTITIES = {}
 
 async function logListing(marketplace, nftAddress, nftId) {
   listing = await marketplace.getNFTListing(nftAddress, nftId)
-  console.log(`listing\n \tprice: ${listing.price}
+  console.log(`>>> MARKETPLACE LISTINGS:
+  \tprice: ${listing.price}
   \tisListed: ${listing.currentlyListed}
   \towner:${IDENTITIES[listing.seller]}
   \taddress: ${listing.contractAddress}
-  \ttokenId: ${listing.tokenId}`
+  \ttokenId: ${listing.tokenId}
+  \tuid: ${listing.uid}`
   )
+  let check1 = await marketplace.getRegistration(nftAddress, nftId)
+  let check2 = await marketplace.getNumRegistered(nftAddress)
+  console.log("is registeredTokens: ", check1);
+  console.log("numRegisteredTokens: ", check2);
+}
+
+async function logListedItems(marketplace) {
+  let listings = await marketplace.fetchListedItems()
+  console.log("LISTED ITEMS FOR SALE", listings);
 }
 
 async function logNftOwner(nftContract, tokenId) {
@@ -28,48 +40,47 @@ async function approveTransfers(marketplace, nftContract, user) {
   }
 }
 
-async function newMintAndRegister(marketplace, evermoreNFT, owner) {
+async function newMintAndRegister(marketplace, evermoreNFT, owner, tokenId) {
   let tokenPrice = await evermoreNFT.getItemPrice()
   tokenPrice = ethers.utils.parseEther(ethers.utils.formatEther(tokenPrice.toString()))
 
-  let mintTx = await evermoreNFT.connect(owner).mint(true, {value: tokenPrice})
+  let mintTx = await evermoreNFT.connect(owner).mint(owner.address, tokenId, {value: tokenPrice})
   const mintTxReceipt = await mintTx.wait(1)
-  const tokenId = mintTxReceipt.events[0].args.tokenId
-  console.log("check approved: ", await evermoreNFT.getApproved(tokenId));
+  const outputTokenId = mintTxReceipt.events[0].args.tokenId
+  console.log("check approved: ", await evermoreNFT.getApproved(outputTokenId));
   console.log("check isApprovedForAll: ", await evermoreNFT.isApprovedForAll(owner.address, marketplace.address));
 
-  await logListing(marketplace, evermoreNFT.address, tokenId)
-  return tokenId
+  await logListing(marketplace, evermoreNFT.address, outputTokenId)
+  return outputTokenId
 }
 
 async function cancelListing(marketplace, evermoreNFT, owner, tokenId) {
-  console.log(`--------- Cancel NFT with ID ${tokenId} ---------`)
+  console.log(`\n\n--------- Cancel NFT with ID ${tokenId} ---------`)
   await marketplace.connect(owner).cancelListing(evermoreNFT.address, tokenId)
   await logListing(marketplace, evermoreNFT.address, tokenId)
 }
 
 async function updateListing(marketplace, evermoreNFT, owner, tokenId, newPrice) {
-  console.log(`--------- Update NFT price with ID ${tokenId} ---------`)
+  console.log(`\n\n--------- Update NFT price with ID ${tokenId} ---------`)
   await marketplace.connect(owner).updateListing(evermoreNFT.address, tokenId, newPrice)
   await logListing(marketplace, evermoreNFT.address, tokenId)
 }
 
 async function buyItem(marketplace, evermoreNFT, buyer, tokenId, price) {
-  console.log(`--------- BUY 1 NFTs with ID ${tokenId} for ${price} ---------`)
-  await logNftOwner(evermoreNFT, tokenId)
+  console.log(`\n\n--------- BUY NFT with ID ${tokenId} for ${price} ---------`)
   await marketplace.connect(buyer).buyItem(evermoreNFT.address, tokenId, {value: price})
   await logNftOwner(evermoreNFT, tokenId)
   await logListing(marketplace, evermoreNFT.address, tokenId)
 }
 
 async function listItem(marketplace, evermoreNFT, owner, tokenId, price) {
-  console.log(`--------- LIST 2ND HAND NFTs with ID ${tokenId} for ${price} ---------`)
+  console.log(`\n\n--------- LIST 2ND HAND NFTs with ID ${tokenId} for ${price} ---------`)
   await marketplace.connect(owner).listItem(evermoreNFT.address, tokenId, price)
   await logListing(marketplace, evermoreNFT.address, tokenId)
 }
 
 async function withdrawProceeds(marketplace, user) {
-  console.log(`--------- WITHDRAW for ${IDENTITIES[user.address]} ---------`)
+  console.log(`\n\n--------- WITHDRAW for ${IDENTITIES[user.address]} ---------`)
   await marketplace.connect(user).withdrawProceeds()
 }
 
@@ -91,7 +102,7 @@ async function main() {
     await marketplace.deployed()
 
     const evermoreNFTFactory = await ethers.getContractFactory("EvermoreNFT")
-    const evermoreNFT = await evermoreNFTFactory.deploy(marketplace.address, PRICE0, nbCollectionItems)
+    const evermoreNFT = await evermoreNFTFactory.deploy(marketplace.address, PRICE0, nbCollectionItems, baseUID)
     await evermoreNFT.deployed()
     await evermoreNFT.setRoyalty(10, royaliesReceiver.address)
     await evermoreNFT.setbaseURI(baseURI)
@@ -104,20 +115,20 @@ async function main() {
     const nbToMint = 3
     let tokenIds = []
 
-    console.log(`--------- MINT AND REGISTER ${nbToMint} NFTs ---------`)
+    console.log(`\n\n--------- MINT AND REGISTER ${nbToMint} NFTs ---------`)
     for (let i=0; i<nbToMint; i++) {
-      const tokenId = await newMintAndRegister(marketplace, evermoreNFT, owner)
+      const tokenId = await newMintAndRegister(marketplace, evermoreNFT, owner, i+1)
       tokenIds.push(tokenId)
-      console.log(`Minted and listed token ${tokenId} by owner ${IDENTITIES[owner]}`)
+      console.log(`Minted and listed token ${tokenId} by owner ${IDENTITIES[owner.address]}`)
     }
 
     ownerItems = await marketplace.connect(owner).fetchMyItems()
+    console.log("OWNER ITEMS", ownerItems);
 
     await listItem(marketplace, evermoreNFT, owner, tokenIds[0], PRICE1)
     await listItem(marketplace, evermoreNFT, owner, tokenIds[1], PRICE1)
 
-    let listings = await marketplace.fetchListedItems()
-    console.log("listings", listings);
+    await logListedItems(marketplace)
 
     await cancelListing(marketplace, evermoreNFT, owner, tokenIds[0])
 
@@ -133,20 +144,22 @@ async function main() {
     const nftPrice2 = listing2.price.toString()
     await buyItem(marketplace, evermoreNFT, buyer2, tokenIds[1], nftPrice2)
 
+    console.log(`\n\n--------- CHECK MARKETPLACE BALANCES ---------`)
     console.log("to earn owner", await marketplace.getSellerProceeds(owner.address));
     console.log("to earn buyer1", await marketplace.getSellerProceeds(buyer1.address));
     console.log("to earn buyer2", await marketplace.getSellerProceeds(buyer2.address));
     await withdrawProceeds(marketplace, owner)
     await withdrawProceeds(marketplace, buyer1)
 
+    console.log(`\n\n--------- CHECK WALLETS BALANCES ---------`)
     console.log("MARKETPLACE ACCOUNT", await ethers.provider.getBalance(marketplace.address))
     console.log("ROYALTIES ACCOUNT", await ethers.provider.getBalance(royaliesReceiver.address))
     console.log("OWNER ACCOUNT", await ethers.provider.getBalance(owner.address))
     console.log("BUYER1 ACCOUNT", await ethers.provider.getBalance(buyer1.address))
     console.log("BUYER2 ACCOUNT", await ethers.provider.getBalance(buyer2.address))
 
-    listings = await marketplace.fetchListedItems()
-    console.log("listings", listings);
+    console.log(`\n\n--------- CHECK MY ITEMS ---------`)
+    await logListedItems(marketplace)
     buyer2Items = await marketplace.connect(buyer2).fetchMyItems()
     console.log("buyer2Items", buyer2Items);
     ownerItems = await marketplace.connect(owner).fetchMyItems()
