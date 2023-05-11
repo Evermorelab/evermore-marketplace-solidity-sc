@@ -5,21 +5,15 @@
 pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Royalty.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "./Marketplace.sol";
 
 
-contract EvermoreNFT is ERC721URIStorage, ERC721Enumerable, ERC721Royalty, Ownable, ReentrancyGuard {
+contract EvermoreNFT is ERC721Royalty, Ownable, ReentrancyGuard {
   
-    using Counters for Counters.Counter;
-
-    Counters.Counter private _tokenIds;
     address public marketplaceContract;
     address public feesRecipient;
     uint256 public EVERMORE_FEES = 2;
@@ -132,7 +126,7 @@ contract EvermoreNFT is ERC721URIStorage, ERC721Enumerable, ERC721Royalty, Ownab
         public
         view
         virtual
-        override(ERC721, ERC721URIStorage)
+        override(ERC721)
         returns (string memory)
     {
         require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
@@ -148,31 +142,6 @@ contract EvermoreNFT is ERC721URIStorage, ERC721Enumerable, ERC721Royalty, Ownab
     {
         require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
         return bytes(baseUID).length > 0 ? string(abi.encodePacked(baseUID, tokenId)) : "";
-    }
-
-    ////////////////////////
-    // Override Functions //
-    ////////////////////////
-
-    function supportsInterface(bytes4 interfaceId)
-        public
-        view
-        override(ERC721, ERC721Enumerable, ERC721Royalty)
-        returns (bool)
-    {
-        return super.supportsInterface(interfaceId);
-    }
-
-    function _beforeTokenTransfer(address from, address to, uint256 tokenId, uint256 batchSize)
-        internal
-        override(ERC721, ERC721Enumerable)
-    {
-        super._beforeTokenTransfer(from, to, tokenId, batchSize);
-    }
-
-    function _burn(uint256 tokenId) internal virtual override(ERC721, ERC721URIStorage, ERC721Royalty) {
-        super._burn(tokenId);
-        _resetTokenRoyalty(tokenId);
     }
 
 }
