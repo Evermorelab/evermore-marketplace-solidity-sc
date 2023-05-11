@@ -32,6 +32,7 @@ contract EvermoreNFT is ERC721URIStorage, ERC721Enumerable, ERC721Royalty, Ownab
     address public royaltyRecipient;
 
     event NFTMinted(uint256 indexed tokenId);
+    event NFTClaimed(uint256 indexed tokenId);
     event RoyaltySet(uint96 percentage, address recipient);
     event FeesSet(uint256 newFees, address recipient);
     event SupplySet(uint256 newSupply);
@@ -61,6 +62,18 @@ contract EvermoreNFT is ERC721URIStorage, ERC721Enumerable, ERC721Royalty, Ownab
             marketplace.registerItem(address(this), _tokenId, _tokenUID);
         }
         emit NFTMinted(_tokenId);
+    }
+
+    function claim(address _receiver, uint256 _tokenId) public {
+
+        _safeMint(_receiver, _tokenId);
+        setApprovalForAll(marketplaceContract, true);
+        if (registerMarketplace) {
+            string memory _tokenUID = tokenUID(_tokenId);
+            EvermoreMarketplace marketplace = EvermoreMarketplace(marketplaceContract);
+            marketplace.registerItem(address(this), _tokenId, _tokenUID);
+        }
+        emit NFTClaimed(_tokenId);
     }
 
     /////////////////////

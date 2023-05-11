@@ -54,6 +54,18 @@ async function newMintAndRegister(marketplace, evermoreNFT, owner, tokenId) {
   return outputTokenId
 }
 
+async function claimNFT(marketplace, evermoreNFT, owner, tokenId) {
+  console.log(`\n\n--------- CLAIM NFT with ID ${tokenId} ---------`)
+  let mintTx = await evermoreNFT.connect(owner).claim(owner.address, tokenId)
+  const mintTxReceipt = await mintTx.wait(1)
+  const outputTokenId = mintTxReceipt.events[0].args.tokenId
+  console.log("check approved: ", await evermoreNFT.getApproved(outputTokenId));
+  console.log("check isApprovedForAll: ", await evermoreNFT.isApprovedForAll(owner.address, marketplace.address));
+
+  await logListing(marketplace, evermoreNFT.address, outputTokenId)
+  return outputTokenId
+}
+
 async function cancelListing(marketplace, evermoreNFT, owner, tokenId) {
   console.log(`\n\n--------- Cancel NFT with ID ${tokenId} ---------`)
   await marketplace.connect(owner).cancelListing(evermoreNFT.address, tokenId)
@@ -117,7 +129,7 @@ async function main() {
 
     console.log(`\n\n--------- MINT AND REGISTER ${nbToMint} NFTs ---------`)
     for (let i=0; i<nbToMint; i++) {
-      const tokenId = await newMintAndRegister(marketplace, evermoreNFT, owner, i+1)
+      const tokenId = await claimNFT(marketplace, evermoreNFT, owner, i+1)
       tokenIds.push(tokenId)
       console.log(`Minted and listed token ${tokenId} by owner ${IDENTITIES[owner.address]}`)
     }
