@@ -34,15 +34,13 @@ contract EvermoreMarketplace is ReentrancyGuard, Ownable {
         bool currentlyListed;
         address contractAddress;
         uint256 tokenId;
-        string uid;
     }
 
     // State Variables
     mapping(address => mapping(uint256 => Listing)) private s_listings;
     mapping(address => uint256) private s_proceeds;
     address[] public nft_addresses;
-    mapping(address => mapping(uint256 => bool)) private _registeredTokens;
-    mapping(address => uint256) private _numRegisteredTokens;
+    mapping(address => uint256[]) private _tokenIdPerAddress;
 
     /////////////////////
     ////// Events ///////
@@ -51,8 +49,7 @@ contract EvermoreMarketplace is ReentrancyGuard, Ownable {
     event ItemRegistered(
         address indexed seller,
         address indexed nftAddress,
-        uint256 tokenId,
-        string indexed uid
+        uint256 tokenId
     );
 
     event ItemListed(
@@ -159,8 +156,7 @@ contract EvermoreMarketplace is ReentrancyGuard, Ownable {
      */
     function registerItem(
         address _nftAddress,
-        uint256 _tokenId,
-        string memory _tokenUID
+        uint256 _tokenId
     )
         external
         notRegistered(_nftAddress, _tokenId)
@@ -173,18 +169,14 @@ contract EvermoreMarketplace is ReentrancyGuard, Ownable {
             revert NotApprovedForMarketplace();
         }
 
-        if (_numRegisteredTokens[_nftAddress] == 0) {
+        if (_tokenIdPerAddress[_nftAddress].length == 0) {
             nft_addresses.push(_nftAddress);
         }
 
-        if (!_registeredTokens[_nftAddress][_tokenId]) {
-            _registeredTokens[_nftAddress][_tokenId] = true;
-            _numRegisteredTokens[_nftAddress]++;
-        }
+        _tokenIdPerAddress[_nftAddress].push(_tokenId);
+        s_listings[_nftAddress][_tokenId] = Listing(0, _owner, false, _nftAddress, _tokenId);
 
-        s_listings[_nftAddress][_tokenId] = Listing(0, _owner, false, _nftAddress, _tokenId, _tokenUID);
-
-        emit ItemRegistered(_owner, _nftAddress, _tokenId, _tokenUID);
+        emit ItemRegistered(_owner, _nftAddress, _tokenId);
     }
 
     /*
@@ -333,29 +325,28 @@ contract EvermoreMarketplace is ReentrancyGuard, Ownable {
 
       for (uint256 i = 0; i < nft_addresses.length; i++) {
         address _nftAddress = nft_addresses[i];
-        for (uint256 j = 0; j < _numRegisteredTokens[_nftAddress]; j++) {
-          uint256 _tokenId = j + 1;
-          Listing memory listing = s_listings[_nftAddress][_tokenId];
-          if (_registeredTokens[_nftAddress][_tokenId] && listing.currentlyListed) {
+        uint256[] memory ids = _tokenIdPerAddress[_nftAddress];
+        for (uint j = 0; j < ids.length; j++) {
+          Listing memory listing = s_listings[_nftAddress][ids[j]];
+          if (listing.currentlyListed) {
             itemCount += 1;
           }
         }
       }
 
-      Listing[] memory _items = new Listing[](itemCount);
+      Listing[] memory listedItems = new Listing[](itemCount);
       for (uint256 i = 0; i < nft_addresses.length; i++) {
         address _nftAddress = nft_addresses[i];
-        for (uint256 j = 0; j < _numRegisteredTokens[_nftAddress]; j++) {
-          uint256 _tokenId = j + 1;
-          Listing memory listing = s_listings[_nftAddress][_tokenId];
-          if (_registeredTokens[_nftAddress][_tokenId] && listing.currentlyListed) {
-            _items[currentIndex] = listing;
+        uint256[] memory ids = _tokenIdPerAddress[_nftAddress];
+        for (uint256 j = 0; j < ids.length; j++) {
+          Listing memory listing = s_listings[_nftAddress][ids[j]];
+          if (listing.currentlyListed) {
+            listedItems[currentIndex] = listing;
             currentIndex += 1;
           }
         }
       }
-
-      return _items;
+      return listedItems;
     }
 
     /*
@@ -368,29 +359,24 @@ contract EvermoreMarketplace is ReentrancyGuard, Ownable {
 
       for (uint256 i = 0; i < nft_addresses.length; i++) {
         address _nftAddress = nft_addresses[i];
-        for (uint256 j = 0; j < _numRegisteredTokens[_nftAddress]; j++) {
-          uint256 _tokenId = j + 1;
-          if (_registeredTokens[_nftAddress][_tokenId]) {
-            itemCount += 1;
-          }
+        uint256[] memory ids = _tokenIdPerAddress[_nftAddress];
+        for (uint j = 0; j < ids.length; j++) {
+          itemCount += 1;
         }
       }
 
       Listing[] memory _items = new Listing[](itemCount);
       for (uint256 i = 0; i < nft_addresses.length; i++) {
         address _nftAddress = nft_addresses[i];
-        for (uint256 j = 0; j < _numRegisteredTokens[_nftAddress]; j++) {
-          uint256 _tokenId = j + 1;
-          if (_registeredTokens[_nftAddress][_tokenId]) {
-            Listing memory listing = s_listings[_nftAddress][_tokenId];
-            _items[currentIndex] = listing;
-            currentIndex += 1;
-          }
+        uint256[] memory ids = _tokenIdPerAddress[_nftAddress];
+        for (uint256 j = 0; j < ids.length; j++) {
+          Listing memory listing = s_listings[_nftAddress][ids[j]];
+          _items[currentIndex] = listing;
+          currentIndex += 1;
         }
       }
       return _items;
     }
-
 
     /*
      * @notice Method to returns all items beloging to a specific address
@@ -403,10 +389,10 @@ contract EvermoreMarketplace is ReentrancyGuard, Ownable {
 
       for (uint256 i = 0; i < nft_addresses.length; i++) {
         address _nftAddress = nft_addresses[i];
-        for (uint256 j = 0; j < _numRegisteredTokens[_nftAddress]; j++) {
-          uint256 _tokenId = j + 1;
-          Listing memory listing = s_listings[_nftAddress][_tokenId];
-          if (_registeredTokens[_nftAddress][_tokenId] && listing.seller == _userAddress) {
+        uint256[] memory ids = _tokenIdPerAddress[_nftAddress];
+        for (uint j = 0; j < ids.length; j++) {
+          Listing memory listing = s_listings[_nftAddress][ids[j]];
+          if (listing.seller == _userAddress) {
             itemCount += 1;
           }
         }
@@ -415,16 +401,15 @@ contract EvermoreMarketplace is ReentrancyGuard, Ownable {
       Listing[] memory _items = new Listing[](itemCount);
       for (uint256 i = 0; i < nft_addresses.length; i++) {
         address _nftAddress = nft_addresses[i];
-        for (uint256 j = 0; j < _numRegisteredTokens[_nftAddress]; j++) {
-          uint256 _tokenId = j + 1;
-          Listing memory listing = s_listings[_nftAddress][_tokenId];
-          if (_registeredTokens[_nftAddress][_tokenId] && listing.seller == _userAddress) {
-            _items[currentIndex] = listing;
+        uint256[] memory ids = _tokenIdPerAddress[_nftAddress];
+        for (uint256 j = 0; j < ids.length; j++) {
+          Listing memory listing = s_listings[_nftAddress][ids[j]];
+          if (listing.seller == _userAddress) {
+          _items[currentIndex] = listing;
             currentIndex += 1;
           }
         }
       }
-
       return _items;
     }
 
@@ -448,11 +433,7 @@ contract EvermoreMarketplace is ReentrancyGuard, Ownable {
         return EVERMORE_FEES;
     }
 
-    function getRegistration(address _scAddress, uint256 _tokenid) public view returns (bool) {
-        return _registeredTokens[_scAddress][_tokenid];
-    }
-
-    function getNumRegistered(address _scAddress) public view returns (uint256) {
-        return _numRegisteredTokens[_scAddress];
+    function getKnownNFTAddresses() public view returns (address[] memory) {
+        return nft_addresses;
     }
 }

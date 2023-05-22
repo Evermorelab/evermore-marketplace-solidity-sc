@@ -15,13 +15,8 @@ async function logListing(marketplace, nftAddress, nftId) {
   \tisListed: ${listing.currentlyListed}
   \towner:${IDENTITIES[listing.seller]}
   \taddress: ${listing.contractAddress}
-  \ttokenId: ${listing.tokenId}
-  \tuid: ${listing.uid}`
+  \ttokenId: ${listing.tokenId}`
   )
-  let check1 = await marketplace.getRegistration(nftAddress, nftId)
-  let check2 = await marketplace.getNumRegistered(nftAddress)
-  console.log("is registeredTokens: ", check1);
-  console.log("numRegisteredTokens: ", check2);
 }
 
 async function logListedItems(marketplace) {
@@ -122,6 +117,7 @@ async function main() {
     await evermoreNFT.deployed()
     await evermoreNFT.setRoyalty(10, royaliesReceiver.address)
     await evermoreNFT.setbaseURI(baseURI)
+    console.log("EvermoreNFT deployed to:", evermoreNFT.address)
 
     // Making sure the marketplace can transfer all the users NFT
     await approveTransfers(marketplace, evermoreNFT, owner)
@@ -134,7 +130,8 @@ async function main() {
     console.log(`\n\n--------- MINT AND REGISTER ${nbToMint} NFTs ---------`)
     for (let i=0; i<nbToMint; i++) {
       //await approveNFTClaim(evermoreNFT, deployer, i+1)
-      const tokenId = await claimNFT(marketplace, evermoreNFT, owner, i+1)
+      let tokenId = i+5;
+      await claimNFT(marketplace, evermoreNFT, owner, tokenId)
       tokenIds.push(tokenId)
       console.log(`Minted and listed token ${tokenId} by owner ${IDENTITIES[owner.address]}`)
     }

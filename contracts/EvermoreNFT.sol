@@ -76,9 +76,8 @@ contract EvermoreNFT is ERC721Royalty, Ownable, ReentrancyGuard {
         _safeMint(_receiver, _tokenId);
         setApprovalForAll(marketplaceContract, true);
         if (registerMarketplace) {
-            string memory _tokenUID = tokenUID(_tokenId);
             EvermoreMarketplace marketplace = EvermoreMarketplace(marketplaceContract);
-            marketplace.registerItem(address(this), _tokenId, _tokenUID);
+            marketplace.registerItem(address(this), _tokenId);
         }
         emit NFTMinted(_tokenId);
     }
@@ -88,9 +87,8 @@ contract EvermoreNFT is ERC721Royalty, Ownable, ReentrancyGuard {
         _safeMint(_receiver, _tokenId);
         setApprovalForAll(marketplaceContract, true);
         if (registerMarketplace) {
-            string memory _tokenUID = tokenUID(_tokenId);
             EvermoreMarketplace marketplace = EvermoreMarketplace(marketplaceContract);
-            marketplace.registerItem(address(this), _tokenId, _tokenUID);
+            marketplace.registerItem(address(this), _tokenId);
         }
         emit NFTClaimed(_tokenId);
     }
