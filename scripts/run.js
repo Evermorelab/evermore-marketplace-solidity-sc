@@ -1,7 +1,7 @@
 const { ethers } = require("hardhat")
 
 const baseURI =  "/ipfs/bafybeih6cahp6rwzlgy2tn5sdjo33hixvem6gn5yfbtn2okfdikncnjaua"
-const baseUID = "ASCG-98069-RD-"  // Random product code
+const baseUID = "ASCG-98069-RD"  // Random product code
 const PRICE0 = ethers.utils.parseEther("0.6")
 const PRICE1 = ethers.utils.parseEther("0.5")
 const PRICE2 = ethers.utils.parseEther("0.4")
@@ -38,6 +38,10 @@ async function approveTransfers(marketplace, nftContract, user) {
   if(!isApprovedForAll){
       await nftContract.connect(user).setApprovalForAll(marketplace.address, true)
   }
+}
+
+async function approveNFTClaim(evermoreNFT, owner, tokenId) {
+  await evermoreNFT.connect(owner).addToAllowlist(tokenId)
 }
 
 async function newMintAndRegister(marketplace, evermoreNFT, owner, tokenId) {
@@ -114,7 +118,7 @@ async function main() {
     await marketplace.deployed()
 
     const evermoreNFTFactory = await ethers.getContractFactory("EvermoreNFT")
-    const evermoreNFT = await evermoreNFTFactory.deploy(marketplace.address, PRICE0, nbCollectionItems, baseUID)
+    const evermoreNFT = await evermoreNFTFactory.connect(deployer).deploy(marketplace.address, nbCollectionItems, baseUID, false)
     await evermoreNFT.deployed()
     await evermoreNFT.setRoyalty(10, royaliesReceiver.address)
     await evermoreNFT.setbaseURI(baseURI)
@@ -129,6 +133,7 @@ async function main() {
 
     console.log(`\n\n--------- MINT AND REGISTER ${nbToMint} NFTs ---------`)
     for (let i=0; i<nbToMint; i++) {
+      //await approveNFTClaim(evermoreNFT, deployer, i+1)
       const tokenId = await claimNFT(marketplace, evermoreNFT, owner, i+1)
       tokenIds.push(tokenId)
       console.log(`Minted and listed token ${tokenId} by owner ${IDENTITIES[owner.address]}`)

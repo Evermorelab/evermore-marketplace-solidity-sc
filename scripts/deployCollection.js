@@ -11,11 +11,12 @@ async function main() {
   console.log("Deploying contracts with the account:", deployer.address);
 
   const evermoreNFTFactory = await ethers.getContractFactory("EvermoreNFT")
-  const evermoreNFT = await evermoreNFTFactory.deploy(defautMarketplaceAddress, PRICE0, nbCollectionItems, baseUID)
+  const evermoreNFT = await evermoreNFTFactory.connect(deployer).deploy(defautMarketplaceAddress, nbCollectionItems, baseUID, false)
   await evermoreNFT.deployed()
   if (baseURI) {
     await evermoreNFT.setbaseURI(baseURI)
   }
+  await evermoreNFT.setRoyalty(10, deployerAddress)
 
   console.log("marketplace address:", defautMarketplaceAddress);
   console.log("evermoreNFT address:", evermoreNFT.address);

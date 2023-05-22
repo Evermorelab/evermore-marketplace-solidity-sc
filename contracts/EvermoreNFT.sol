@@ -14,16 +14,21 @@ import "./Marketplace.sol";
 
 contract EvermoreNFT is ERC721Royalty, Ownable, ReentrancyGuard {
   
-    address public marketplaceContract;
-    address public feesRecipient;
-    uint256 public EVERMORE_FEES = 2;
-    bool public registerMarketplace = true;
+    address public marketplaceContract;  // Evermore Marketplace smart contract
+    uint256 public EVERMORE_FEES = 2;  // Evemore fees when minting a token
+    address public feesRecipient;  // Wallet to receive minting fees
+    bool public registerMarketplace = true;  // automatically register token on Evermore Marketplace
+    mapping(address => bool) public admins;  // add addtionnal addresses to interact with sensitive functions
+
     uint256 public itemPrice;
     string public baseURI;
     string public baseUID;
     uint256 public itemSupply;
+    bool public initWithLock;  // If true, NFT have to be unlocked before they can be claimed
     uint96 public royaltyPercentage;
     address public royaltyRecipient;
+
+    mapping(uint256 => bool) public NFTLocked; // NFT allowed to be claimed
 
     event NFTMinted(uint256 indexed tokenId);
     event NFTClaimed(uint256 indexed tokenId);
@@ -33,12 +38,32 @@ contract EvermoreNFT is ERC721Royalty, Ownable, ReentrancyGuard {
     event PriceSet(uint256 newPrice);
     event BaseURISet(string newBaseURI);
     event BaseUIDSet(string newBaseUID);
+    event MarketplaceContractSet(address newMarketplaceAddress);
+    event NFTLockeded(uint256 tokenId);
+    event NFTUnlocked(uint256 tokenId);
+    event AdminAdded(address admin);
+    event AdminRemoved(address admin);
 
-    constructor(address _marketplaceContract, uint256 _itemPrice, uint256 _itemSupply, string memory _baseUID) ERC721("Evermore NFT", "EVMNFT") {
+    modifier onlyOwnerOrAdmin() {
+        require(owner() == _msgSender() || admins[_msgSender()], "Only owner or admin can call this function");
+        _;
+    }
+
+    constructor(address _marketplaceContract, uint256 _itemSupply, string memory _baseUID, bool _initWithLock) ERC721("Evermore NFT", "EVMNFT") {
         marketplaceContract = _marketplaceContract;
-        itemPrice = _itemPrice;
         itemSupply = _itemSupply;
+        initWithLock = _initWithLock;
         setbaseUID(_baseUID);
+        if (initWithLock) {
+            lockAllNFTs();  // token are unlocked by default
+        }
+    }
+
+    function lockAllNFTs() internal {
+        // Perform a loop to set true as default value for all keys
+        for (uint256 i = 1; i <= itemSupply; i++) {
+            NFTLocked[i] = true;
+        }
     }
 
     function mint(address _receiver, uint256 _tokenId) public payable nonReentrant{
@@ -59,7 +84,7 @@ contract EvermoreNFT is ERC721Royalty, Ownable, ReentrancyGuard {
     }
 
     function claim(address _receiver, uint256 _tokenId) public {
-
+        require(!NFTLocked[_tokenId], "Token has not be approved for claim");
         _safeMint(_receiver, _tokenId);
         setApprovalForAll(marketplaceContract, true);
         if (registerMarketplace) {
@@ -68,6 +93,26 @@ contract EvermoreNFT is ERC721Royalty, Ownable, ReentrancyGuard {
             marketplace.registerItem(address(this), _tokenId, _tokenUID);
         }
         emit NFTClaimed(_tokenId);
+    }
+
+    function lockNFT(uint256 _tokenId) external onlyOwnerOrAdmin {
+        NFTLocked[_tokenId] = true;
+        emit NFTLockeded(_tokenId);
+    }
+
+    function unlockNFT(uint256 _tokenId) external onlyOwnerOrAdmin {
+        NFTLocked[_tokenId] = false;
+        emit NFTUnlocked(_tokenId);
+    }
+
+    function addAdmin(address _address) external onlyOwner {
+        admins[_address] = true;
+        emit AdminAdded(_address);
+    }
+
+    function removeAdmin(address _address) external onlyOwner {
+        admins[_address] = false;
+        emit AdminRemoved(_address);
     }
 
     /////////////////////
@@ -110,6 +155,11 @@ contract EvermoreNFT is ERC721Royalty, Ownable, ReentrancyGuard {
         emit RoyaltySet(_percentage, _recipient);
     }
 
+    function setMarketplaceAddress(address _newMarketplaceAddress) public onlyOwner {
+        marketplaceContract = _newMarketplaceAddress;
+        emit MarketplaceContractSet(_newMarketplaceAddress);
+    }
+
     /////////////////////
     // Getter Functions //
     /////////////////////
@@ -141,7 +191,16 @@ contract EvermoreNFT is ERC721Royalty, Ownable, ReentrancyGuard {
         returns (string memory)
     {
         require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
-        return bytes(baseUID).length > 0 ? string(abi.encodePacked(baseUID, tokenId)) : "";
+        return bytes(baseUID).length > 0 ? string(abi.encodePacked(baseUID, "-", tokenId)) : "";
     }
+
+    function isAdminOrOwner(address _user) public view returns (bool) {
+        return admins[_user] || owner() == _user;
+    }
+
+     function isLocked(uint256 _tokenId) public view returns (bool) {
+        return NFTLocked[_tokenId];
+    }
+
 
 }
