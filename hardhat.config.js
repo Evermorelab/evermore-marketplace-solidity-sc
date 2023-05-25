@@ -19,5 +19,14 @@ module.exports = {
       url: `https://eth-sepolia.g.alchemy.com/v2/${ALCHEMY_API_KEY}`,
       accounts: [METAMASK_PRIVATE_KEY],
     },
+    polygon_mumbai: {
+      url: "https://rpc-mumbai.maticvigil.com",
+      accounts: [METAMASK_PRIVATE_KEY]
+    },
+    alfajores: {
+      url: "https://alfajores-forno.celo-testnet.org",
+      accounts: [METAMASK_PRIVATE_KEY],
+      chainId: 44787
+    },
   },
 };
