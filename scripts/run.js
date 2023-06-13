@@ -179,6 +179,27 @@ async function main() {
     ownerItems = await marketplace.connect(owner).fetchMyItems()
     console.log("ownerItems", ownerItems);
 
+
+    // unregister all items
+    for (let i=0; i<tokenIds.length; i++) {
+      // try to connect with each key of IDENTITIES
+      console.log(`\n\n--------- UNREGISTER ITEM ${tokenIds[i]} ---------`)
+      for (const [key, value] of Object.entries(IDENTITIES)) {
+        try {
+          const user = accounts.filter((account) => account.address === key)[0]
+          await marketplace.connect(user).unregisterItem(evermoreNFT.address, tokenIds[i])
+          console.log(`--------- UNREGISTER ITEM ${tokenIds[i]} for ${value} ---------`)
+        } catch(err) {
+        }
+      }
+    }
+
+    ownerItems = await marketplace.connect(owner).fetchMyItems()
+    console.log("ownerItems", ownerItems);
+    // check the known NFT addresses in the marketplace
+    const nftAddress = await marketplace.getKnownNFTAddresses()
+    console.log("nftAddress", nftAddress);
+
   } catch(err) {
     console.log('Doh! ', err);
   }

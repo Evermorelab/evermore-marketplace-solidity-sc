@@ -52,6 +52,12 @@ contract EvermoreMarketplace is ReentrancyGuard, Ownable {
         uint256 tokenId
     );
 
+    event ItemUnregistered(
+        address indexed seller,
+        address indexed nftAddress,
+        uint256 tokenId
+    );
+
     event ItemListed(
         address indexed seller,
         address indexed nftAddress,
@@ -83,7 +89,7 @@ contract EvermoreMarketplace is ReentrancyGuard, Ownable {
 
     modifier isRegistered(address _nftAddress, uint256 _tokenId) {
         Listing memory listing = s_listings[_nftAddress][_tokenId];
-        if (listing.price <= 0) {
+        if (listing.seller == address(0)) {
             revert NotRegistered(_nftAddress, _tokenId);
         }
         _;
@@ -94,7 +100,7 @@ contract EvermoreMarketplace is ReentrancyGuard, Ownable {
         uint256 _tokenId
     ) {
         Listing memory listing = s_listings[_nftAddress][_tokenId];
-        if (listing.price > 0) {
+        if (listing.seller != address(0)) {
             revert AlreadyRegistered(_nftAddress, _tokenId);
         }
         _;
@@ -177,6 +183,48 @@ contract EvermoreMarketplace is ReentrancyGuard, Ownable {
         s_listings[_nftAddress][_tokenId] = Listing(0, _owner, false, _nftAddress, _tokenId);
 
         emit ItemRegistered(_owner, _nftAddress, _tokenId);
+    }
+
+    /*
+    * @notice Method for unregistering an existing NFT from the marketplace
+    * @param _nftAddress Address of NFT contract
+    * @param _tokenId Token ID of NFT
+    */
+    function unregisterItem(
+        address _nftAddress,
+        uint256 _tokenId
+    )
+        external
+        isRegistered(_nftAddress, _tokenId)
+        isOwnerOrContract(_nftAddress, _tokenId, msg.sender)
+    {
+        // Remove the item from the list of registered items
+        delete s_listings[_nftAddress][_tokenId];
+
+        // Remove the token ID from the array of token IDs for the given NFT address
+        uint256[] storage tokenIds = _tokenIdPerAddress[_nftAddress];
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            if (tokenIds[i] == _tokenId) {
+                // Swap with the last element and delete
+                tokenIds[i] = tokenIds[tokenIds.length - 1];
+                tokenIds.pop();
+                break;
+            }
+        }
+
+        // If there are no more registered items for the given NFT address, remove it from the list
+        if (tokenIds.length == 0) {
+            for (uint256 i = 0; i < nft_addresses.length; i++) {
+                if (nft_addresses[i] == _nftAddress) {
+                    // Swap with the last element and delete
+                    nft_addresses[i] = nft_addresses[nft_addresses.length - 1];
+                    nft_addresses.pop();
+                    break;
+                }
+            }
+        }
+
+        emit ItemUnregistered(msg.sender, _nftAddress, _tokenId);
     }
 
     /*
