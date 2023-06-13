@@ -38,18 +38,16 @@ METAMASK_PRIVATE_KEY=""
 # your Alchemy API key
 ALCHEMY_API_KEY=""
 ```
-2. Run `npx hardhat run scripts/deployMarketplace.js --network sepolia` to deploy the Marketplace on the Sepolia testnet. The Marketplace contract address will be displayed in the console after deployment. Keep it, you will need it for the next step.
+2. Run `npx hardhat run scripts/deployMarketplace.js --network alfajores` to deploy the Marketplace on the Alfajores testnet. The Marketplace contract address will be displayed in the console after deployment. Keep it, you will need it for the next step.
 
 3. Update the collection initial variables in the .env file:
 ```
  # the address of the deployed Marketplace
 MARKETPLACE_ADDRESS="0x36042AA54644ABc270c490EdA913d20F85a3A7F2"
 QUANTITY=100
-PRICE="0.001"
+BASE_URI="https://ipfs.io/ipfs/"
+BASE_UID=""
+ROYALTIES_ADDRESS=""
 ```
 
-4. Run `npx hardhat run scripts/deployCollection.js --network sepolia` for each NFT collection you want to deploy. Make sure you add the deployed address into the products Database. Make sure you setup the correct values in .env before each deployment
-
-5. Connect your wallet to REMIX to setup each collection baseURI, royalties and fees.
-
-
+4. Run `npx hardhat run scripts/deployCollection.js --network alfajores` for each NFT collection you want to deploy. Make sure you add the deployed address into the products Database. Make sure you setup the correct values in .env before each deployment.

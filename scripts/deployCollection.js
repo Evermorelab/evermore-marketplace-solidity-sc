@@ -3,7 +3,7 @@ const nbCollectionItems = process.env.QUANTITY;
 const defautMarketplaceAddress = process.env.MARKETPLACE_ADDRESS;
 const baseURI = process.env.BASE_URI;
 const baseUID = process.env.BASE_UID;
-const deployerAddress = process.env.DEPLOYER_ADDRESS;
+const royaltiesAddress = process.env.ROYALTIES_ADDRESS;
 
 async function main() {
   const [deployer] = await ethers.getSigners();
@@ -16,7 +16,7 @@ async function main() {
   if (baseURI) {
     await evermoreNFT.setbaseURI(baseURI)
   }
-  await evermoreNFT.setRoyalty(10, deployerAddress)
+  await evermoreNFT.setRoyalty(10, royaltiesAddress)
 
   console.log("marketplace address:", defautMarketplaceAddress);
   console.log("evermoreNFT address:", evermoreNFT.address);
