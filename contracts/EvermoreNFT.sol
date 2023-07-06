@@ -10,9 +10,10 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Royalty.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "./Marketplace.sol";
+import "./ERC721Lockable.sol";
 
 
-contract EvermoreNFT is ERC721Royalty, Ownable, ReentrancyGuard {
+contract EvermoreNFT is ERC721Royalty, Ownable, ReentrancyGuard, ERC721Lockable {
   
     address public marketplaceContract;  // Evermore Marketplace smart contract
     uint256 public EVERMORE_FEES = 2;  // Evemore fees when minting a token
@@ -28,8 +29,6 @@ contract EvermoreNFT is ERC721Royalty, Ownable, ReentrancyGuard {
     uint96 public royaltyPercentage;
     address public royaltyRecipient;
 
-    mapping(uint256 => bool) public NFTLocked; // NFT allowed to be claimed
-
     event NFTMinted(uint256 indexed tokenId);
     event NFTClaimed(uint256 indexed tokenId);
     event RoyaltySet(uint96 percentage, address recipient);
@@ -39,8 +38,6 @@ contract EvermoreNFT is ERC721Royalty, Ownable, ReentrancyGuard {
     event BaseURISet(string newBaseURI);
     event BaseUIDSet(string newBaseUID);
     event MarketplaceContractSet(address newMarketplaceAddress);
-    event NFTLockeded(uint256 tokenId);
-    event NFTUnlocked(uint256 tokenId);
     event AdminAdded(address admin);
     event AdminRemoved(address admin);
 
@@ -55,14 +52,7 @@ contract EvermoreNFT is ERC721Royalty, Ownable, ReentrancyGuard {
         initWithLock = _initWithLock;
         setbaseUID(_baseUID);
         if (initWithLock) {
-            lockAllNFTs();  // token are unlocked by default
-        }
-    }
-
-    function lockAllNFTs() internal {
-        // Perform a loop to set true as default value for all keys
-        for (uint256 i = 1; i <= itemSupply; i++) {
-            NFTLocked[i] = true;
+            lockAllNFTs(itemSupply);  // token are unlocked by default
         }
     }
 
@@ -83,7 +73,6 @@ contract EvermoreNFT is ERC721Royalty, Ownable, ReentrancyGuard {
     }
 
     function claim(address _receiver, uint256 _tokenId) public {
-        require(!NFTLocked[_tokenId], "Token has not be approved for claim");
         _safeMint(_receiver, _tokenId);
         setApprovalForAll(marketplaceContract, true);
         if (registerMarketplace) {
@@ -94,13 +83,11 @@ contract EvermoreNFT is ERC721Royalty, Ownable, ReentrancyGuard {
     }
 
     function lockNFT(uint256 _tokenId) external onlyOwnerOrAdmin {
-        NFTLocked[_tokenId] = true;
-        emit NFTLockeded(_tokenId);
+        _lockNFT(_tokenId);
     }
 
     function unlockNFT(uint256 _tokenId) external onlyOwnerOrAdmin {
-        NFTLocked[_tokenId] = false;
-        emit NFTUnlocked(_tokenId);
+        _unlockNFT(_tokenId);
     }
 
     function addAdmin(address _address) external onlyOwner {
@@ -196,9 +183,28 @@ contract EvermoreNFT is ERC721Royalty, Ownable, ReentrancyGuard {
         return admins[_user] || owner() == _user;
     }
 
-     function isLocked(uint256 _tokenId) public view returns (bool) {
-        return NFTLocked[_tokenId];
+    ///////////////////////
+    // Override Functions //
+    ///////////////////////
+    function _beforeTokenTransfer(address from, address to, uint256 tokenId, uint256 batchSize)
+        internal
+        override(ERC721, ERC721Lockable)
+    {
+        super._beforeTokenTransfer(from, to, tokenId, batchSize);
     }
 
+    function _burn (uint256 tokenId) internal override(ERC721Lockable, ERC721Royalty) {
+        super._burn(tokenId);
+    }
+
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        virtual
+        override(ERC721, ERC721Royalty)
+        returns (bool)
+    {
+        return super.supportsInterface(interfaceId);
+    }
 
 }

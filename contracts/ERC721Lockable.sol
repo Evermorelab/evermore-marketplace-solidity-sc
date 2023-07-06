@@ -1,0 +1,81 @@
+// SPDX-License-Identifier: UNLICENSED
+
+pragma solidity ^0.8.9;
+
+import "@openzeppelin/contracts/utils/Context.sol";
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+
+/**
+* @dev Contract module which allows children to lock and unlock specific NFTs.
+*
+* The module makes sure an NFT cannot be transferred if it is locked.
+*
+* This module is used through inheritance. It will make available the modifiers
+* `whenNotLocked` and `whenLocked`, which can be applied to the functions of
+* your contract.
+* 
+*/
+
+abstract contract ERC721Lockable is ERC721 {
+
+    mapping(uint256 => bool) public NFTLocked;
+
+    event NFTLockeded(uint256 tokenId);
+    event NFTUnlocked(uint256 tokenId);
+
+    modifier whenNotLocked(uint256 tokenId) {
+        _requireNotLocked(tokenId);
+        _;
+    }
+
+    modifier whenLocked(uint256 tokenId) {
+        _requireLocked(tokenId);
+        _;
+    }
+
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 firstTokenId,
+        uint256 batchSize
+    ) internal virtual override {
+        super._beforeTokenTransfer(from, to, firstTokenId, batchSize);
+        for (uint256 i = 0; i < batchSize; i++) {
+            _requireNotLocked(firstTokenId + i);
+        }
+    }
+
+    function _burn (uint256 tokenId) internal virtual override {
+        NFTLocked[tokenId] = false;
+        super._burn(tokenId);
+    }
+
+    function _requireNotLocked(uint256 tokenId) internal view virtual {
+        require(!NFTLocked[tokenId], "Token is locked");
+    }
+
+    function _requireLocked(uint256 tokenId) internal view virtual {
+        require(NFTLocked[tokenId], "Token is not locked");
+    }
+
+    function lockAllNFTs(uint256 itemSupply) internal {
+        // Perform a loop to set true as default value for all keys
+        for (uint256 i = 1; i <= itemSupply; i++) {
+          NFTLocked[i] = true;
+        }
+    }
+
+    function _lockNFT(uint256 _tokenId) internal virtual whenNotLocked(_tokenId) {
+        NFTLocked[_tokenId] = true;
+        emit NFTLockeded(_tokenId);
+    }
+
+    function _unlockNFT(uint256 _tokenId) internal virtual whenLocked(_tokenId) {
+        NFTLocked[_tokenId] = false;
+        emit NFTUnlocked(_tokenId);
+    }
+
+    function isLocked(uint256 _tokenId) external view returns (bool) {
+        return NFTLocked[_tokenId];
+    }
+}
