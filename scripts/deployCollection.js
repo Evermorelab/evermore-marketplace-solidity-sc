@@ -16,7 +16,7 @@ async function main() {
   if (baseURI) {
     await evermoreNFT.setbaseURI(baseURI)
   }
-  await evermoreNFT.setRoyalty(10, royaltiesAddress)
+  await evermoreNFT.setRoyalty(royaltiesAddress, 1000) // 10% royalties
 
   console.log("marketplace address:", defautMarketplaceAddress);
   console.log("evermoreNFT address:", evermoreNFT.address);

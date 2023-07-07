@@ -115,8 +115,8 @@ async function main() {
     const evermoreNFTFactory = await ethers.getContractFactory("EvermoreNFT")
     const evermoreNFT = await evermoreNFTFactory.connect(deployer).deploy(marketplace.address, nbCollectionItems, baseUID, false)
     await evermoreNFT.deployed()
-    await evermoreNFT.setRoyalty(10, royaliesReceiver.address)
-    await evermoreNFT.setbaseURI(baseURI)
+    await evermoreNFT.setRoyalty(royaliesReceiver.address, 1000) // 10% royalties
+    await evermoreNFT.setBaseURI(baseURI)
     console.log("EvermoreNFT deployed to:", evermoreNFT.address)
 
     // Making sure the marketplace can transfer all the users NFT

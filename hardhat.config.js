@@ -10,6 +10,15 @@ const METAMASK_PRIVATE_KEY = process.env.METAMASK_PRIVATE_KEY;
 
 module.exports = {
   solidity: "0.8.9",
+  settings: {
+    optimizer: {
+      enabled: true,
+      runs: 200,
+    },
+    metadata: {
+      bytecodeHash: "none",
+    },
+  },
   networks: {
     goerli: {
       url: `https://eth-goerli.alchemyapi.io/v2/${ALCHEMY_API_KEY}`,

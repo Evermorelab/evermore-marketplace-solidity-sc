@@ -22,10 +22,10 @@ describe("ERC721Lockable", function () {
     const [receiver] = await ethers.getSigners();
     // Lock the NFT
     await erc721Lockable.lockNFT(TOKEN_ID);
-    // Attempt to mint the locked NFT and expect the transaction to be rejected with the specific error message
+    // Attempt to mint the locked NFT
     await expect(
       erc721Lockable.mint(receiver.address, TOKEN_ID)
-    ).to.be.rejectedWith(/token is locked/i);
+    ).to.be.rejectedWith(/ERC721Lockable: Token is locked/i);
   });
   
   it("should unlock NFT", async function () {

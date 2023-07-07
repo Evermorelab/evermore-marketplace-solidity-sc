@@ -2,7 +2,6 @@
 
 pragma solidity ^0.8.9;
 
-import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 
 /**
@@ -39,10 +38,10 @@ abstract contract ERC721Lockable is ERC721 {
         uint256 firstTokenId,
         uint256 batchSize
     ) internal virtual override {
-        super._beforeTokenTransfer(from, to, firstTokenId, batchSize);
         for (uint256 i = 0; i < batchSize; i++) {
             _requireNotLocked(firstTokenId + i);
         }
+        super._beforeTokenTransfer(from, to, firstTokenId, batchSize);
     }
 
     function _burn (uint256 tokenId) internal virtual override {
@@ -51,11 +50,11 @@ abstract contract ERC721Lockable is ERC721 {
     }
 
     function _requireNotLocked(uint256 tokenId) internal view virtual {
-        require(!NFTLocked[tokenId], "Token is locked");
+        require(!NFTLocked[tokenId], "ERC721Lockable: Token is locked");
     }
 
     function _requireLocked(uint256 tokenId) internal view virtual {
-        require(NFTLocked[tokenId], "Token is not locked");
+        require(NFTLocked[tokenId], "ERC721Lockable: Token is not locked");
     }
 
     function lockAllNFTs(uint256 itemSupply) internal {

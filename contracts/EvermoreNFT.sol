@@ -1,161 +1,86 @@
 //SPDX-License-Identifier: UNLICENSED
 
-// Solidity files have to start with this pragma.
-// It will be used by the Solidity compiler to validate its version.
 pragma solidity ^0.8.9;
 
-import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/AccessControlDefaultAdminRules.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Royalty.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import "./Marketplace.sol";
 import "./ERC721Lockable.sol";
+import "./ERC721UID.sol";
+import "./ERC721MarketplaceLink.sol";
 
 
-contract EvermoreNFT is ERC721Royalty, Ownable, ReentrancyGuard, ERC721Lockable {
+contract EvermoreNFT is ERC721Royalty, ERC721UID, ERC721Lockable, ERC721MarketplaceLink, AccessControlDefaultAdminRules {
   
-    address public marketplaceContract;  // Evermore Marketplace smart contract
-    uint256 public EVERMORE_FEES = 2;  // Evemore fees when minting a token
-    address public feesRecipient;  // Wallet to receive minting fees
-    bool public registerMarketplace = true;  // automatically register token on Evermore Marketplace
-    mapping(address => bool) public admins;  // add addtionnal addresses to interact with sensitive functions
+    // Role to manage the NFT collection such as locking/unlocking NFTs
+    bytes32 public constant MANAGER = keccak256("MANAGER");
+    // Role to manage the smart contract such as setting fees, supply, etc.
+    // This role is also able to mint NFTs
+    bytes32 public constant ADMIN = keccak256("ADMIN");
 
-    uint256 public itemPrice;
     string public baseURI;
-    string public baseUID;
     uint256 public itemSupply;
-    bool public initWithLock;  // If true, NFT have to be unlocked before they can be claimed
-    uint96 public royaltyPercentage;
-    address public royaltyRecipient;
 
-    event NFTMinted(uint256 indexed tokenId);
     event NFTClaimed(uint256 indexed tokenId);
-    event RoyaltySet(uint96 percentage, address recipient);
-    event FeesSet(uint256 newFees, address recipient);
     event SupplySet(uint256 newSupply);
-    event PriceSet(uint256 newPrice);
     event BaseURISet(string newBaseURI);
-    event BaseUIDSet(string newBaseUID);
-    event MarketplaceContractSet(address newMarketplaceAddress);
-    event AdminAdded(address admin);
-    event AdminRemoved(address admin);
 
-    modifier onlyOwnerOrAdmin() {
-        require(owner() == _msgSender() || admins[_msgSender()], "Only owner or admin can call this function");
-        _;
-    }
-
-    constructor(address _marketplaceContract, uint256 _itemSupply, string memory _baseUID, bool _initWithLock) ERC721("Evermore NFT", "EVMNFT") {
-        marketplaceContract = _marketplaceContract;
-        itemSupply = _itemSupply;
-        initWithLock = _initWithLock;
-        setbaseUID(_baseUID);
-        if (initWithLock) {
-            lockAllNFTs(itemSupply);  // token are unlocked by default
+    constructor(
+        address _marketplaceContract,
+        uint256 _itemSupply,
+        string memory _baseUID,
+        bool _initWithLock)
+        ERC721("Evermore NFT", "EVMNFT")
+        AccessControlDefaultAdminRules(1, _msgSender()){
+        _setMarketplaceAddress(_marketplaceContract);
+        _grantRole(ADMIN, _msgSender());
+        _grantRole(MANAGER, _msgSender());
+        setBaseUID(_baseUID);
+        setItemSupply(_itemSupply);
+        if (_initWithLock) {
+            lockAllNFTs(itemSupply); // lock all NFTs by default
         }
-    }
-
-    function mint(address _receiver, uint256 _tokenId) public payable nonReentrant{
-        require(itemPrice <= msg.value, "Not enough payment tokens sent");
-
-        // Send Evermore fees
-        uint256 _evermoreValue = SafeMath.div(SafeMath.mul(msg.value, EVERMORE_FEES), 100);
-        payable(feesRecipient).transfer(_evermoreValue);
-
-        _safeMint(_receiver, _tokenId);
-        setApprovalForAll(marketplaceContract, true);
-        if (registerMarketplace) {
-            EvermoreMarketplace marketplace = EvermoreMarketplace(marketplaceContract);
-            marketplace.registerItem(address(this), _tokenId);
-        }
-        emit NFTMinted(_tokenId);
     }
 
     function claim(address _receiver, uint256 _tokenId) public {
         _safeMint(_receiver, _tokenId);
-        setApprovalForAll(marketplaceContract, true);
-        if (registerMarketplace) {
-            EvermoreMarketplace marketplace = EvermoreMarketplace(marketplaceContract);
-            marketplace.registerItem(address(this), _tokenId);
-        }
+        _registerOnMarketplace(_tokenId);
         emit NFTClaimed(_tokenId);
     }
 
-    function lockNFT(uint256 _tokenId) external onlyOwnerOrAdmin {
+    function lockNFT(uint256 _tokenId) external onlyRole(MANAGER) {
         _lockNFT(_tokenId);
     }
 
-    function unlockNFT(uint256 _tokenId) external onlyOwnerOrAdmin {
+    function unlockNFT(uint256 _tokenId) external onlyRole(MANAGER) {
         _unlockNFT(_tokenId);
     }
 
-    function addAdmin(address _address) external onlyOwner {
-        admins[_address] = true;
-        emit AdminAdded(_address);
-    }
+    // Setter Functions
 
-    function removeAdmin(address _address) external onlyOwner {
-        admins[_address] = false;
-        emit AdminRemoved(_address);
-    }
-
-    /////////////////////
-    // Setter Functions //
-    /////////////////////
-
-    function setbaseURI(string memory _newBaseURI) public onlyOwner {
+    function setBaseURI(string memory _newBaseURI) public onlyRole(ADMIN) {
         baseURI = _newBaseURI;
         emit BaseURISet(_newBaseURI);
     }
 
-    function setbaseUID(string memory _newBaseUID) public onlyOwner {
-        baseUID = _newBaseUID;
-        emit BaseUIDSet(_newBaseUID);
+    function setBaseUID(string memory _newBaseUID) public onlyRole(ADMIN) {
+        _setbaseUID(_newBaseUID);
     }
 
-    function setItemPrice(uint256 _newPrice) public onlyOwner {
-        require(_newPrice > 0 ether, "Cannot set price to zero");
-        itemPrice = _newPrice;
-        emit PriceSet(_newPrice);
-    }
-
-    function setItemSupply(uint256 _newSupply) public onlyOwner {
+    function setItemSupply(uint256 _newSupply) public onlyRole(ADMIN) {
         require(_newSupply > 0 ether, "Cannot set supply to zero");
         itemSupply = _newSupply;
         emit SupplySet(_newSupply);
     }
 
-    function setFees(uint256 _newFees, address _recipient) public onlyOwner {
-        require(_newFees > 0 ether, "Cannot set fees to zero");
-        EVERMORE_FEES = _newFees;
-        feesRecipient = _recipient;
-        emit FeesSet(_newFees, _recipient);
+    function setRoyalty(address _recipient, uint96 _percentage) public onlyRole(ADMIN) {
+        _setDefaultRoyalty(_recipient, _percentage);
     }
 
-    function setRoyalty(uint96 _percentage, address _recipient) public onlyOwner {
-        royaltyPercentage = _percentage;
-        royaltyRecipient = _recipient;
-        _setDefaultRoyalty(royaltyRecipient, royaltyPercentage);
-        emit RoyaltySet(_percentage, _recipient);
+    function setMarketplaceAddress(address _newMarketplaceAddress) public onlyRole(ADMIN) {
+        _setMarketplaceAddress(_newMarketplaceAddress);
     }
 
-    function setMarketplaceAddress(address _newMarketplaceAddress) public onlyOwner {
-        marketplaceContract = _newMarketplaceAddress;
-        emit MarketplaceContractSet(_newMarketplaceAddress);
-    }
-
-    /////////////////////
-    // Getter Functions //
-    /////////////////////
-
-    function getFees() public view returns (uint256) {
-        return EVERMORE_FEES;
-    }
-
-    function getItemPrice() public view returns (uint256) {
-        return itemPrice;
-    }
+    // Getter Functions
 
     function tokenURI(uint256 tokenId)
         public
@@ -164,36 +89,21 @@ contract EvermoreNFT is ERC721Royalty, Ownable, ReentrancyGuard, ERC721Lockable 
         override(ERC721)
         returns (string memory)
     {
-        require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
-
         return bytes(baseURI).length > 0 ? string(abi.encodePacked(baseURI, tokenId)) : "";
     }
 
-    function tokenUID(uint256 tokenId)
-        public
-        view
-        virtual
-        returns (string memory)
-    {
-        require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
-        return bytes(baseUID).length > 0 ? string(abi.encodePacked(baseUID, "-", tokenId)) : "";
-    }
+    // Override Functions
 
-    function isAdminOrOwner(address _user) public view returns (bool) {
-        return admins[_user] || owner() == _user;
-    }
-
-    ///////////////////////
-    // Override Functions //
-    ///////////////////////
     function _beforeTokenTransfer(address from, address to, uint256 tokenId, uint256 batchSize)
         internal
         override(ERC721, ERC721Lockable)
     {
+        require(batchSize == 1, "Batch size must be 1");
+        require(tokenId <= itemSupply, "Token ID is greater than supply");
         super._beforeTokenTransfer(from, to, tokenId, batchSize);
     }
 
-    function _burn (uint256 tokenId) internal override(ERC721Lockable, ERC721Royalty) {
+    function _burn (uint256 tokenId) internal override(ERC721, ERC721Lockable, ERC721Royalty) {
         super._burn(tokenId);
     }
 
@@ -201,7 +111,7 @@ contract EvermoreNFT is ERC721Royalty, Ownable, ReentrancyGuard, ERC721Lockable 
         public
         view
         virtual
-        override(ERC721, ERC721Royalty)
+        override(ERC721, ERC721Royalty, AccessControlDefaultAdminRules)
         returns (bool)
     {
         return super.supportsInterface(interfaceId);
