@@ -11,18 +11,38 @@ import "./ERC721MarketplaceLink.sol";
 
 contract EvermoreNFT is ERC721Royalty, ERC721UID, ERC721Lockable, ERC721MarketplaceLink, AccessControlDefaultAdminRules {
   
-    // Role to manage the NFT collection such as locking/unlocking NFTs
-    bytes32 public constant MANAGER = keccak256("MANAGER");
+    // ROLES
     // Role to manage the smart contract such as setting fees, supply, etc.
     // This role is also able to mint NFTs
     bytes32 public constant ADMIN = keccak256("ADMIN");
+    // Role to manage the NFT collection such as locking/unlocking NFTs. Can also add events to the NFT lifecycle.
+    bytes32 public constant MANAGER = keccak256("MANAGER");
+    // Role to allowed to add events in the NFT lifecycle, such as resale, repair, etc.
+    bytes32 public constant EVENT_MANAGER = keccak256("EVENT_MANAGER");
 
     string public baseURI;
     uint256 public itemSupply;
 
+    // store the different events happening to an NFT during the corresponding item lifecycle
+    // Each event is a link to the event metadata {timestamp, event description, images, etc.}
+    mapping(uint256 => string[]) public itemEvents;
+
+
     event NFTClaimed(uint256 indexed tokenId);
     event SupplySet(uint256 newSupply);
     event BaseURISet(string newBaseURI);
+    event ItemEventAdded(uint256 indexed tokenId, string eventURI);
+
+    modifier onlyTrusted(uint256 tokenId) {
+        require(
+            (ownerOf(tokenId) == _msgSender() ||
+            hasRole(EVENT_MANAGER, _msgSender()) ||
+            hasRole(MANAGER, _msgSender()) ||
+            hasRole(ADMIN, _msgSender())
+            ),
+            "Missing required role");
+        _;
+    }
 
     constructor(
         address _marketplaceContract,
@@ -53,6 +73,11 @@ contract EvermoreNFT is ERC721Royalty, ERC721UID, ERC721Lockable, ERC721Marketpl
 
     function unlockNFT(uint256 _tokenId) external onlyRole(MANAGER) {
         _unlockNFT(_tokenId);
+    }
+
+    function addItemEvent(uint256 _tokenId, string memory _eventURI) external onlyTrusted(_tokenId) {
+        itemEvents[_tokenId].push(_eventURI);
+        emit ItemEventAdded(_tokenId, _eventURI);
     }
 
     // Setter Functions
@@ -90,6 +115,10 @@ contract EvermoreNFT is ERC721Royalty, ERC721UID, ERC721Lockable, ERC721Marketpl
         returns (string memory)
     {
         return bytes(baseURI).length > 0 ? string(abi.encodePacked(baseURI, tokenId)) : "";
+    }
+
+    function getItemEvents(uint256 _tokenId) external view returns (string[] memory) {
+        return itemEvents[_tokenId];
     }
 
     // Override Functions

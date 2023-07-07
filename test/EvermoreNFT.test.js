@@ -2,7 +2,6 @@ const { expect } = require("chai");
 require("chai").use(require("chai-as-promised"));
 
 
-
 describe("EvermoreNFT", function () {
   const ITEM_SUPPLY = 100;
   const BASE_URI="ipfs://QmQ1X";
@@ -10,6 +9,7 @@ describe("EvermoreNFT", function () {
   const TOKEN_ID = 1;
   const MANAGER_ROLE = ethers.utils.id("MANAGER");
   const ADMIN_ROLE = ethers.utils.id("ADMIN");
+  const EVENT_MANAGER_ROLE = ethers.utils.id("EVENT_MANAGER");
 
   beforeEach(async function (init_with_lock=false) {
     // deploy marketplace
@@ -18,13 +18,22 @@ describe("EvermoreNFT", function () {
     await marketplace.deployed();
     this.marketplaceAddress = marketplace.address;
     // deploy NFT
-    [owner, other] = await ethers.getSigners();
+    [owner, other, receiver, minter] = await ethers.getSigners();
     this.owner = owner;
     this.other = other;
+    this.receiver = receiver;
+    this.minter = minter;
     const EvermoreNFT = await ethers.getContractFactory("EvermoreNFT");
     evermoreNFT = await EvermoreNFT.connect(owner).deploy(this.marketplaceAddress, ITEM_SUPPLY, BASE_UID, init_with_lock);
     await evermoreNFT.deployed();
     await evermoreNFT.connect(this.owner).setBaseURI(BASE_URI);
+  });
+
+  it("should the owner be also an ADMIN and MANAGER", async function () {
+    const isAdmin = await evermoreNFT.hasRole(ADMIN_ROLE, this.owner.address);
+    const isManager = await evermoreNFT.hasRole(MANAGER_ROLE, this.owner.address);
+    expect(isAdmin).to.be.true;
+    expect(isManager).to.be.true;
   });
 
   it("should be able to lock NFT as MANAGER", async function () {
@@ -67,25 +76,22 @@ describe("EvermoreNFT", function () {
   });
 
   it("should be able to claim an NFT if tokenId is not claimed", async function () {
-    const [minter] = await ethers.getSigners();
-    await evermoreNFT.claim(minter.address, TOKEN_ID);
+    await evermoreNFT.connect(this.minter).claim(this.minter.address, TOKEN_ID);
     const owner = await evermoreNFT.ownerOf(TOKEN_ID);
     expect(owner).to.equal(minter.address);
   });
 
   it("should not be able to claim an NFT if tokenId is already claimed", async function () {
-    const [minter1, minter2] = await ethers.getSigners();
-    await evermoreNFT.claim(minter1.address, TOKEN_ID);
+    await evermoreNFT.connect(this.minter).claim(this.minter.address, TOKEN_ID);
     await expect(
-      evermoreNFT.claim(minter2.address, TOKEN_ID)
+      evermoreNFT.connect(this.other).claim(this.other.address, TOKEN_ID)
     ).to.be.rejectedWith(/ERC721: token already minted/i);
   });
 
   it("should not be able to claim an NFT if tokenId is locked", async function () {
-    const [minter] = await ethers.getSigners();
     await evermoreNFT.connect(this.owner).lockNFT(TOKEN_ID);
     await expect(
-      evermoreNFT.claim(minter.address, TOKEN_ID)
+      evermoreNFT.connect(this.minter).claim(this.minter.address, TOKEN_ID)
     ).to.be.rejectedWith(/ERC721Lockable: Token is locked/i);
   });
 
@@ -184,13 +190,51 @@ describe("EvermoreNFT", function () {
   it("should be able to update the royalties as admin", async function () {
     const newRoyaltyPerc = 10;
     const newRoyalty = newRoyaltyPerc*100;
-    const [minter] = await ethers.getSigners();
     await evermoreNFT.connect(this.owner).grantRole(ADMIN_ROLE, this.other.address);
     await evermoreNFT.connect(this.other).setRoyalty(this.other.address, newRoyalty);
-    await evermoreNFT.claim(minter.address, TOKEN_ID);
+    await evermoreNFT.connect(this.minter).claim(minter.address, TOKEN_ID);
     const [address, percentage] = await evermoreNFT.royaltyInfo(TOKEN_ID, 100);
     expect(address).to.equal(this.other.address);
     expect(percentage.toString()).to.equal(newRoyaltyPerc.toString());
+  });
+
+  it("should be able to add an event as nft owner", async function () {
+    const eventURI = "ipfs://123";
+    await evermoreNFT.connect(this.minter).claim(this.minter.address, TOKEN_ID);
+    await evermoreNFT.connect(this.minter).addItemEvent(TOKEN_ID, eventURI);
+    const events = await evermoreNFT.getItemEvents(TOKEN_ID);
+    expect(events[0]).to.equal(eventURI);
+  });
+
+  it("should not be able to add an event as non-nft owner", async function () {
+    const eventURI = "ipfs://123";
+    await evermoreNFT.connect(this.minter).claim(this.minter.address, TOKEN_ID);
+    // transfer to another address
+    await evermoreNFT.connect(this.minter).transferFrom(this.minter.address, this.receiver.address, TOKEN_ID);
+    await expect(
+      evermoreNFT.connect(this.minter).addItemEvent(TOKEN_ID, eventURI)
+    ).to.be.rejectedWith(/Missing required role/i);
+  });
+
+  it("should be able to add an event as EVENT_MANAGER, ADMIN or MANAGER", async function () {
+    const eventURIs =[ "ipfs://123", "ipfs://456", "ipfs://789"];
+    // event manager
+    await evermoreNFT.connect(this.minter).claim(this.minter.address, TOKEN_ID);
+    await evermoreNFT.connect(this.owner).grantRole(EVENT_MANAGER_ROLE, this.other.address);
+    await evermoreNFT.connect(this.other).addItemEvent(TOKEN_ID, eventURIs[0]);
+    const events = await evermoreNFT.getItemEvents(TOKEN_ID);
+    expect(events[0]).to.equal(eventURIs[0]);
+    // manager
+    await evermoreNFT.connect(this.owner).grantRole(MANAGER_ROLE, this.receiver.address);
+    await evermoreNFT.connect(this.receiver).addItemEvent(TOKEN_ID, eventURIs[1]);
+    const events2 = await evermoreNFT.getItemEvents(TOKEN_ID);
+    expect(events2[1]).to.equal(eventURIs[1]);
+    // admin
+    await evermoreNFT.connect(this.owner).revokeRole(MANAGER_ROLE, this.receiver.address);
+    await evermoreNFT.connect(this.owner).grantRole(ADMIN_ROLE, this.receiver.address);
+    await evermoreNFT.connect(this.receiver).addItemEvent(TOKEN_ID, eventURIs[2]);
+    const events3 = await evermoreNFT.getItemEvents(TOKEN_ID);
+    expect(events3[2]).to.equal(eventURIs[2]);
   });
 
 });
