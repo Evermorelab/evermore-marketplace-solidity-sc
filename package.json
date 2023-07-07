@@ -9,14 +9,13 @@
   "author": "Floriane Le Floch",
   "license": "ISC",
   "devDependencies": {
-    "@nomicfoundation/hardhat-toolbox": "^1.0.2",
-    "@nomiclabs/hardhat-ethers": "^2.2.3",
-    "ethers": "^5.7.2",
+    "@nomicfoundation/hardhat-chai-matchers": "^2.0.1",
+    "@nomicfoundation/hardhat-ethers": "^3.0.3",
+    "ethers": "^6.6.2",
     "hardhat": "^2.16.1"
   },
   "dependencies": {
     "@openzeppelin/contracts": "^4.9.2",
-    "dotenv": "^16.0.3",
-    "web3": "^4.0.2"
+    "dotenv": "^16.0.3"
   }
 }

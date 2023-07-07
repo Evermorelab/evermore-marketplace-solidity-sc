@@ -9,7 +9,7 @@ describe("ERC721Lockable", function () {
   beforeEach(async function () {
     const ERC721Lockable = await ethers.getContractFactory("ERC721LockableMock");
     erc721Lockable = await ERC721Lockable.deploy();
-    await erc721Lockable.deployed();
+    await erc721Lockable.waitForDeployment();
   });
 
   it("should lock NFT", async function () {

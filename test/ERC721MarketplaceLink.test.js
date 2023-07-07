@@ -10,12 +10,13 @@ describe("ERC721MarketplaceLink", function () {
     // deploy marketplace
     const Marketplace = await ethers.getContractFactory("EvermoreMarketplace");
     marketplace = await Marketplace.deploy();
-    await marketplace.deployed();
-    this.marketplaceAddress = marketplace.address;
+    await marketplace.waitForDeployment();
+    this.marketplaceAddress = await marketplace.getAddress();
     // deploy NFT
     const ERC721MarketplaceLink = await ethers.getContractFactory("ERC721MarketplaceLinkMock");
     erc721MarketplaceLink = await ERC721MarketplaceLink.deploy(this.marketplaceAddress, true);
-    await erc721MarketplaceLink.deployed();
+    await erc721MarketplaceLink.waitForDeployment();
+    this.NFTAddress = await erc721MarketplaceLink.getAddress();
   });
 
   it("should return the correct marketplace address", async function () {
@@ -31,23 +32,24 @@ describe("ERC721MarketplaceLink", function () {
   it("should register the token in the marketplace", async function () {
     const [minter] = await ethers.getSigners();
     await erc721MarketplaceLink.mint(minter.address, TOKEN_ID);
-    const listing = await marketplace.getNFTListing(erc721MarketplaceLink.address, TOKEN_ID);
+    const listing = await marketplace.getNFTListing(this.NFTAddress, TOKEN_ID);
     // listing exist and address is not zero
     expect(listing.seller).to.equal(minter.address);
   });
 
   it("not minted token should not be registered in the marketplace", async function () {
-    const listing = await marketplace.getNFTListing(erc721MarketplaceLink.address, TOKEN_ID);
+    const listing = await marketplace.getNFTListing(this.NFTAddress, TOKEN_ID);
     await expect(listing.seller).to.equal(NULL_ADDRESS);
   });
 
   it("should not register the token in the marketplace if the flag is false", async function () {
     const ERC721MarketplaceLink = await ethers.getContractFactory("ERC721MarketplaceLinkMock");
     erc721MarketplaceLink = await ERC721MarketplaceLink.deploy(this.marketplaceAddress, false);
-    await erc721MarketplaceLink.deployed();
+    await erc721MarketplaceLink.waitForDeployment();
+    const NFTAddress = await erc721MarketplaceLink.getAddress();
     const [minter] = await ethers.getSigners();
     await erc721MarketplaceLink.mint(minter.address, TOKEN_ID);
-    const listing = await marketplace.getNFTListing(erc721MarketplaceLink.address, TOKEN_ID);
+    const listing = await marketplace.getNFTListing(NFTAddress, TOKEN_ID);
     await expect(listing.seller).to.equal(NULL_ADDRESS);
   });
 

@@ -1,6 +1,6 @@
 const { expect } = require("chai");
 require("chai").use(require("chai-as-promised"));
-const web3 = require("web3");
+
 
 describe("ERC721UID", function () {
 
@@ -10,7 +10,7 @@ describe("ERC721UID", function () {
   beforeEach(async function () {
     const ERC721UID = await ethers.getContractFactory("ERC721UIDMock");
     erc721UID = await ERC721UID.deploy(baseUID);
-    await erc721UID.deployed();
+    await erc721UID.waitForDeployment();
   });
 
   it("should return the base UID", async function () {
