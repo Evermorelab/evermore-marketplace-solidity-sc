@@ -57,7 +57,7 @@ abstract contract ERC721Lockable is ERC721 {
         require(NFTLocked[tokenId], "ERC721Lockable: Token is not locked");
     }
 
-    function lockAllNFTs(uint256 itemSupply) internal {
+    function _lockAllNFTs(uint256 itemSupply) internal {
         // Perform a loop to set true as default value for all keys
         for (uint256 i = 1; i <= itemSupply; i++) {
           NFTLocked[i] = true;

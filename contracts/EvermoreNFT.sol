@@ -57,7 +57,7 @@ contract EvermoreNFT is ERC721Royalty, ERC721UID, ERC721Lockable, ERC721Marketpl
         setBaseUID(_baseUID);
         setItemSupply(_itemSupply);
         if (_initWithLock) {
-            lockAllNFTs(itemSupply); // lock all NFTs by default
+            _lockAllNFTs(itemSupply); // lock all NFTs by default
         }
     }
 

@@ -8,7 +8,7 @@ describe("ERC721Lockable", function () {
 
   beforeEach(async function () {
     const ERC721Lockable = await ethers.getContractFactory("ERC721LockableMock");
-    erc721Lockable = await ERC721Lockable.deploy();
+    erc721Lockable = await ERC721Lockable.deploy(false);
     await erc721Lockable.waitForDeployment();
   });
 
@@ -18,7 +18,7 @@ describe("ERC721Lockable", function () {
     expect(isLocked).to.be.true;
   });
 
-  it("should not transfer locked NFT", async function () {
+  it("should not mint locked NFT", async function () {
     const [receiver] = await ethers.getSigners();
     // Lock the NFT
     await erc721Lockable.lockNFT(TOKEN_ID);
@@ -42,9 +42,18 @@ describe("ERC721Lockable", function () {
     // Unlock the NFT
     await erc721Lockable.unlockNFT(TOKEN_ID);
     // Mint the unlocked NFT
-    erc721Lockable.mint(receiver.address, TOKEN_ID);
+    await erc721Lockable.mint(receiver.address, TOKEN_ID);
     // Expect the NFT to be minted
     const owner = await erc721Lockable.ownerOf(TOKEN_ID);
     expect(owner).to.equal(receiver.address);
   });
+
+  it("should lock all NFTs if contract initialized with ", async function () {
+    const ERC721Lockable = await ethers.getContractFactory("ERC721LockableMock");
+    erc721Lockable = await ERC721Lockable.deploy(true);
+    await erc721Lockable.waitForDeployment();
+    const isLocked = await erc721Lockable.isLocked(TOKEN_ID);
+    expect(isLocked).to.be.true;
+  });
+
 });

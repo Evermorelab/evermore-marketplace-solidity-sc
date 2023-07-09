@@ -5,7 +5,13 @@ pragma solidity ^0.8.9;
 import "../ERC721Lockable.sol";
 
 contract ERC721LockableMock is ERC721Lockable {
-    constructor() ERC721("MockNFT", "MOCK") {}
+    uint256 public TOTAL_SUUPLY = 100;
+
+    constructor(bool _initWithLock) ERC721("MockNFT", "MOCK") {
+        if (_initWithLock) {
+            _lockAllNFTs(TOTAL_SUUPLY);
+        }
+    }
 
     function lockNFT(uint256 tokenId) external {
         _lockNFT(tokenId);
