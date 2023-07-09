@@ -7,10 +7,17 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Royalty.sol";
 import "./ERC721Lockable.sol";
 import "./ERC721UID.sol";
 import "./ERC721MarketplaceLink.sol";
+import "./HistoryStorage.sol";
 
 
 contract EvermoreNFT is ERC721Royalty, ERC721UID, ERC721Lockable, ERC721MarketplaceLink, AccessControlDefaultAdminRules {
-  
+
+    // HISTORY DATA
+    // History data for an item corresponding to the item's lifecycle; stored in a separate contract
+    // The reading functions are public, but the writing functions are only accessible by the NFT contract
+    // The reading functions are not implemented here as the contract is too large
+    HistoryStorage public historyStorage;
+
     // ROLES
     // Role to manage the smart contract such as setting fees, supply, etc.
     // This role is also able to mint NFTs
@@ -23,15 +30,9 @@ contract EvermoreNFT is ERC721Royalty, ERC721UID, ERC721Lockable, ERC721Marketpl
     string public baseURI;
     uint256 public itemSupply;
 
-    // store the different events happening to an NFT during the corresponding item lifecycle
-    // Each event is a link to the event metadata {timestamp, event description, images, etc.}
-    mapping(uint256 => string[]) public itemEvents;
-
-
     event NFTClaimed(uint256 indexed tokenId);
     event SupplySet(uint256 newSupply);
     event BaseURISet(string newBaseURI);
-    event ItemEventAdded(uint256 indexed tokenId, string eventURI);
 
     modifier onlyTrusted(uint256 tokenId) {
         require(
@@ -48,7 +49,8 @@ contract EvermoreNFT is ERC721Royalty, ERC721UID, ERC721Lockable, ERC721Marketpl
         address _marketplaceContract,
         uint256 _itemSupply,
         string memory _baseUID,
-        bool _initWithLock)
+        bool _initWithLock
+    )
         ERC721("Evermore NFT", "EVMNFT")
         AccessControlDefaultAdminRules(1, _msgSender()){
         _setMarketplaceAddress(_marketplaceContract);
@@ -59,6 +61,8 @@ contract EvermoreNFT is ERC721Royalty, ERC721UID, ERC721Lockable, ERC721Marketpl
         if (_initWithLock) {
             _lockAllNFTs(itemSupply); // lock all NFTs by default
         }
+        // Deploy HistoryStorage contract
+        historyStorage = new HistoryStorage();
     }
 
     function claim(address _receiver, uint256 _tokenId) public {
@@ -76,8 +80,11 @@ contract EvermoreNFT is ERC721Royalty, ERC721UID, ERC721Lockable, ERC721Marketpl
     }
 
     function addItemEvent(uint256 _tokenId, string memory _eventURI) external onlyTrusted(_tokenId) {
-        itemEvents[_tokenId].push(_eventURI);
-        emit ItemEventAdded(_tokenId, _eventURI);
+        historyStorage.addItemEvent(_tokenId, _eventURI);
+    }
+
+    function addItemCondition(uint256 _tokenId, string memory _conditionURI) external onlyTrusted(_tokenId) {
+        historyStorage.addItemCondition(_tokenId, _conditionURI);
     }
 
     // Setter Functions
@@ -115,10 +122,6 @@ contract EvermoreNFT is ERC721Royalty, ERC721UID, ERC721Lockable, ERC721Marketpl
         returns (string memory)
     {
         return bytes(baseURI).length > 0 ? string(abi.encodePacked(baseURI, tokenId)) : "";
-    }
-
-    function getItemEvents(uint256 _tokenId) external view returns (string[] memory) {
-        return itemEvents[_tokenId];
     }
 
     // Override Functions
