@@ -15,9 +15,6 @@ module.exports = {
       enabled: true,
       runs: 200,
     },
-    metadata: {
-      bytecodeHash: "none",
-    },
   },
   networks: {
     goerli: {

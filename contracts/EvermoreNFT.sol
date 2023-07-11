@@ -8,7 +8,10 @@ import "./ERC721Lockable.sol";
 import "./ERC721UID.sol";
 import "./ERC721MarketplaceLink.sol";
 import "./HistoryStorage.sol";
+import "./SignatureLibrary.sol";
 
+error InvalidSignature();
+error SignatureAlreadyUsed();
 error InvalidTokenId();
 error InvalidSupply();
 error InvalidBatchSize();
@@ -31,6 +34,9 @@ contract EvermoreNFT is ERC721Royalty, ERC721UID, ERC721Lockable, ERC721Marketpl
     // Role to allowed to add events in the NFT lifecycle, such as resale, repair, etc.
     bytes32 public constant EVENT_MANAGER = keccak256("EVENT_MANAGER");
 
+    // Allowlist variables
+    mapping(bytes => bool) public signatureUsed;
+
     string public baseURI;
     uint256 public itemSupply;
 
@@ -38,7 +44,7 @@ contract EvermoreNFT is ERC721Royalty, ERC721UID, ERC721Lockable, ERC721Marketpl
     event SupplySet(uint256 newSupply);
     event BaseURISet(string newBaseURI);
 
-    function onlyTrusted(uint256 tokenId) private view {
+    function _onlyTrusted(uint256 tokenId) private view {
         if (
             ownerOf(tokenId) != _msgSender() &&
             !hasRole(EVENT_MANAGER, _msgSender()) &&
@@ -46,6 +52,12 @@ contract EvermoreNFT is ERC721Royalty, ERC721UID, ERC721Lockable, ERC721Marketpl
             !hasRole(ADMIN, _msgSender())
         ) {
             revert InvalidPermissions();
+        }
+    }
+
+    function _allowedSignClaim(address _signer) private view {
+        if (!hasRole(MANAGER, _signer)) {
+            revert InvalidSignature();
         }
     }
 
@@ -69,7 +81,13 @@ contract EvermoreNFT is ERC721Royalty, ERC721UID, ERC721Lockable, ERC721Marketpl
         historyStorage = new HistoryStorage();
     }
 
-    function claim(address _receiver, uint256 _tokenId) public {
+    // TODO: make sure the hash corresponds to the correct tokenId and receiver
+    function claim(address _receiver, uint256 _tokenId, bytes32 hash, bytes memory signature) public {
+        _allowedSignClaim(SignatureLibrary.recoverSigner(hash, signature));
+        if (signatureUsed[signature]) {
+            revert SignatureAlreadyUsed();
+        }
+        signatureUsed[signature] = true;
         _safeMint(_receiver, _tokenId);
         _registerOnMarketplace(_tokenId);
         emit NFTClaimed(_tokenId);
@@ -84,12 +102,12 @@ contract EvermoreNFT is ERC721Royalty, ERC721UID, ERC721Lockable, ERC721Marketpl
     }
 
     function addItemEvent(uint256 _tokenId, string memory _eventURI) external {
-        onlyTrusted(_tokenId);
+        _onlyTrusted(_tokenId);
         historyStorage.addItemEvent(_tokenId, _eventURI);
     }
 
     function addItemCondition(uint256 _tokenId, string memory _conditionURI) external {
-        onlyTrusted(_tokenId);
+        _onlyTrusted(_tokenId);
         historyStorage.addItemCondition(_tokenId, _conditionURI);
     }
 
