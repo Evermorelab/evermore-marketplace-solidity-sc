@@ -9,6 +9,10 @@ import "./ERC721UID.sol";
 import "./ERC721MarketplaceLink.sol";
 import "./HistoryStorage.sol";
 
+error InvalidTokenId();
+error InvalidSupply();
+error InvalidBatchSize();
+error InvalidPermissions();
 
 contract EvermoreNFT is ERC721Royalty, ERC721UID, ERC721Lockable, ERC721MarketplaceLink, AccessControlDefaultAdminRules {
 
@@ -34,15 +38,15 @@ contract EvermoreNFT is ERC721Royalty, ERC721UID, ERC721Lockable, ERC721Marketpl
     event SupplySet(uint256 newSupply);
     event BaseURISet(string newBaseURI);
 
-    modifier onlyTrusted(uint256 tokenId) {
-        require(
-            (ownerOf(tokenId) == _msgSender() ||
-            hasRole(EVENT_MANAGER, _msgSender()) ||
-            hasRole(MANAGER, _msgSender()) ||
-            hasRole(ADMIN, _msgSender())
-            ),
-            "Missing required role");
-        _;
+    function onlyTrusted(uint256 tokenId) private view {
+        if (
+            ownerOf(tokenId) != _msgSender() &&
+            !hasRole(EVENT_MANAGER, _msgSender()) &&
+            !hasRole(MANAGER, _msgSender()) &&
+            !hasRole(ADMIN, _msgSender())
+        ) {
+            revert InvalidPermissions();
+        }
     }
 
     constructor(
@@ -79,11 +83,13 @@ contract EvermoreNFT is ERC721Royalty, ERC721UID, ERC721Lockable, ERC721Marketpl
         _unlockNFT(_tokenId);
     }
 
-    function addItemEvent(uint256 _tokenId, string memory _eventURI) external onlyTrusted(_tokenId) {
+    function addItemEvent(uint256 _tokenId, string memory _eventURI) external {
+        onlyTrusted(_tokenId);
         historyStorage.addItemEvent(_tokenId, _eventURI);
     }
 
-    function addItemCondition(uint256 _tokenId, string memory _conditionURI) external onlyTrusted(_tokenId) {
+    function addItemCondition(uint256 _tokenId, string memory _conditionURI) external {
+        onlyTrusted(_tokenId);
         historyStorage.addItemCondition(_tokenId, _conditionURI);
     }
 
@@ -99,7 +105,9 @@ contract EvermoreNFT is ERC721Royalty, ERC721UID, ERC721Lockable, ERC721Marketpl
     }
 
     function setItemSupply(uint256 _newSupply) public onlyRole(ADMIN) {
-        require(_newSupply > 0 ether, "Cannot set supply to zero");
+        if (_newSupply <= 0) {
+            revert InvalidSupply();
+        }
         itemSupply = _newSupply;
         emit SupplySet(_newSupply);
     }
@@ -130,8 +138,12 @@ contract EvermoreNFT is ERC721Royalty, ERC721UID, ERC721Lockable, ERC721Marketpl
         internal
         override(ERC721, ERC721Lockable)
     {
-        require(batchSize == 1, "Batch size must be 1");
-        require(tokenId <= itemSupply, "Token ID is greater than supply");
+        if (batchSize != 1) {
+            revert InvalidBatchSize();
+        }
+        if (tokenId > itemSupply || tokenId < 1 ) {
+            revert InvalidTokenId();
+        }
         super._beforeTokenTransfer(from, to, tokenId, batchSize);
     }
 

@@ -1,4 +1,5 @@
 const { expect } = require("chai");
+require("@nomicfoundation/hardhat-chai-matchers");
 require("chai").use(require("chai-as-promised"));
 
 
@@ -76,7 +77,7 @@ describe("EvermoreNFT", function () {
   it("should not be able to claim an NFT if tokenId higher than supply", async function () {
     await expect(
       evermoreNFT.connect(this.owner).claim(this.other.address, ITEM_SUPPLY+1)
-    ).to.be.rejectedWith(/Token ID is greater than supply/i);
+    ).to.be.revertedWithCustomError(evermoreNFT, 'InvalidTokenId');
   });
 
   it("should register a new NFT in the marketplace by default", async function () {
@@ -223,7 +224,7 @@ describe("EvermoreNFT", function () {
     await evermoreNFT.connect(this.minter).transferFrom(this.minter.address, this.receiver.address, TOKEN_ID);
     await expect(
       evermoreNFT.connect(this.minter).addItemEvent(TOKEN_ID, eventURI)
-    ).to.be.rejectedWith(/Missing required role/i);
+    ).to.be.revertedWithCustomError(evermoreNFT, 'InvalidPermissions');
   });
 
   it("should be able to add an event as EVENT_MANAGER, ADMIN or MANAGER", async function () {
@@ -265,7 +266,7 @@ describe("EvermoreNFT", function () {
     await evermoreNFT.connect(this.minter).transferFrom(this.minter.address, this.receiver.address, TOKEN_ID);
     await expect(
       evermoreNFT.connect(this.minter).addItemCondition(TOKEN_ID, conditionURI)
-    ).to.be.rejectedWith(/Missing required role/i);
+    ).to.be.revertedWithCustomError(evermoreNFT, 'InvalidPermissions');
   });
 
   it("should be able to add a condition as EVENT_MANAGER, ADMIN or MANAGER", async function () {
