@@ -8,9 +8,9 @@ describe("EvermoreNFT", function () {
   const BASE_URI="ipfs://QmQ1X";
   const BASE_UID= "MERCH-RED-COT-L-923";
   const TOKEN_ID = 1;
-  const MANAGER_ROLE = ethers.id("MANAGER");
-  const ADMIN_ROLE = ethers.id("ADMIN");
-  const EVENT_MANAGER_ROLE = ethers.id("EVENT_MANAGER");
+  const MANAGER_ROLE = ethers.utils.id("MANAGER");
+  const ADMIN_ROLE = ethers.utils.id("ADMIN");
+  const EVENT_MANAGER_ROLE = ethers.utils.id("EVENT_MANAGER");
 
   async function getStorageContract(evermoreNFT) {
     const historyStorageAddress = await evermoreNFT.historyStorage();
@@ -20,8 +20,8 @@ describe("EvermoreNFT", function () {
 
   async function signClaim(tokenId, receiver, signer) {
     const message = `${receiver.address} claims token ${tokenId}`;
-    const messageHash = ethers.id(message);
-    const messageBytes = ethers.getBytes(messageHash);
+    const messageHash = ethers.utils.id(message);
+    const messageBytes = ethers.utils.arrayify(messageHash);
     const signature = await signer.signMessage(messageBytes);
     return { messageHash, signature };
   }
@@ -42,14 +42,14 @@ describe("EvermoreNFT", function () {
     // deploy signature library
     const Signature = await ethers.getContractFactory("SignatureLibrary");
     signature = await Signature.deploy();
-    await signature.waitForDeployment();
-    const signatureAddress = await signature.getAddress();
+    await signature.deployed();
+    const signatureAddress = await signature.address;
 
     // deploy marketplace
     const Marketplace = await ethers.getContractFactory("EvermoreMarketplace");
     marketplace = await Marketplace.deploy();
-    await marketplace.waitForDeployment();
-    this.marketplaceAddress = await marketplace.getAddress();
+    await marketplace.deployed();
+    this.marketplaceAddress = await marketplace.address;
 
     // deploy NFT
     const EvermoreNFT = await ethers.getContractFactory( "EvermoreNFT", {
@@ -58,7 +58,7 @@ describe("EvermoreNFT", function () {
       },
     });
     evermoreNFT = await EvermoreNFT.connect(owner).deploy(this.marketplaceAddress, ITEM_SUPPLY, BASE_UID, init_with_lock);
-    await evermoreNFT.waitForDeployment();
+    await evermoreNFT.deployed();
     await evermoreNFT.connect(this.owner).setBaseURI(BASE_URI);
   });
 
@@ -317,7 +317,7 @@ describe("EvermoreNFT", function () {
   it("should be able to claim with signature from a manager", async function () {
     await evermoreNFT.connect(this.owner).grantRole(MANAGER_ROLE, this.other.address);
     const { messageHash, signature } = await signClaim(TOKEN_ID, this.minter, this.other);
-    await evermoreNFT.connect(this.minter).claim(this.minter, TOKEN_ID, messageHash, signature);
+    await evermoreNFT.connect(this.minter).claim(this.minter.address, TOKEN_ID, messageHash, signature);
     await expect(
       evermoreNFT.ownerOf(TOKEN_ID)
     ).to.eventually.equal(this.minter.address);
@@ -326,25 +326,25 @@ describe("EvermoreNFT", function () {
   it("should not be able to claim with if signer is not a manager", async function () {
     const { messageHash, signature } = await signClaim(TOKEN_ID, this.minter, this.other);
     await expect(
-      evermoreNFT.connect(this.minter).claim(this.minter, TOKEN_ID, messageHash, signature)
+      evermoreNFT.connect(this.minter).claim(this.minter.address, TOKEN_ID, messageHash, signature)
     ).to.be.revertedWithCustomError(evermoreNFT, 'InvalidSignature');
   });
 
   it("should not be able to claim multiple times with the same signature", async function () {
     await evermoreNFT.connect(this.owner).grantRole(MANAGER_ROLE, this.other.address);
     const { messageHash, signature } = await signClaim(TOKEN_ID, this.minter, this.other);
-    await evermoreNFT.connect(this.minter).claim(this.minter, TOKEN_ID, messageHash, signature);
+    await evermoreNFT.connect(this.minter).claim(this.minter.address, TOKEN_ID, messageHash, signature);
     await expect(
-      evermoreNFT.connect(this.minter).claim(this.minter, TOKEN_ID+1, messageHash, signature)
+      evermoreNFT.connect(this.minter).claim(this.minter.address, TOKEN_ID+1, messageHash, signature)
     ).to.be.revertedWithCustomError(evermoreNFT, 'SignatureAlreadyUsed');
   });
 
   it("should be able to claim multiple NFTs with a valide signature", async function () {
     await evermoreNFT.connect(this.owner).grantRole(MANAGER_ROLE, this.other.address);
     let { messageHash: messageHash1, signature: signature1 } = await signClaim(TOKEN_ID, this.minter, this.other);
-    await evermoreNFT.connect(this.minter).claim(this.minter, TOKEN_ID, messageHash1, signature1);
+    await evermoreNFT.connect(this.minter).claim(this.minter.address, TOKEN_ID, messageHash1, signature1);
     let { messageHash: messageHash2, signature: signature2 } = await signClaim(TOKEN_ID+1, this.minter, this.other);
-    await evermoreNFT.connect(this.minter).claim(this.minter, TOKEN_ID+1, messageHash2, signature2);
+    await evermoreNFT.connect(this.minter).claim(this.minter.address, TOKEN_ID+1, messageHash2, signature2);
     await expect(
       evermoreNFT.ownerOf(TOKEN_ID+1)
     ).to.eventually.equal(this.minter.address);

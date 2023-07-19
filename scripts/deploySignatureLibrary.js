@@ -1,4 +1,4 @@
-const PRICE0 = ethers.parseEther(process.env.PRICE);
+const PRICE0 = ethers.utils.parseEther(process.env.PRICE);
 const nbCollectionItems = process.env.QUANTITY;
 
 async function main() {
@@ -8,8 +8,8 @@ async function main() {
 
   const libraryFactory = await ethers.getContractFactory("SignatureLibrary");
   const library = await libraryFactory.deploy();
-  await library.waitForDeployment();
-  const libraryAddress = await library.getAddress();
+  await library.deployed();
+  const libraryAddress = await library.address;
 
   console.log("library address:", libraryAddress);
 }
