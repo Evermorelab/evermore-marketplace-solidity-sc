@@ -9,7 +9,7 @@ describe("ERC721Lockable", function () {
   beforeEach(async function () {
     const ERC721Lockable = await ethers.getContractFactory("ERC721LockableMock");
     erc721Lockable = await ERC721Lockable.deploy(false);
-    await erc721Lockable.waitForDeployment();
+    await erc721Lockable.deployed();
   });
 
   it("should lock NFT", async function () {
@@ -51,7 +51,7 @@ describe("ERC721Lockable", function () {
   it("should lock all NFTs if contract initialized with ", async function () {
     const ERC721Lockable = await ethers.getContractFactory("ERC721LockableMock");
     erc721Lockable = await ERC721Lockable.deploy(true);
-    await erc721Lockable.waitForDeployment();
+    await erc721Lockable.deployed();
     const isLocked = await erc721Lockable.isLocked(TOKEN_ID);
     expect(isLocked).to.be.true;
   });

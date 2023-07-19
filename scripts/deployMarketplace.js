@@ -1,4 +1,4 @@
-const PRICE0 = ethers.parseEther(process.env.PRICE);
+const PRICE0 = ethers.utils.parseEther(process.env.PRICE);
 const nbCollectionItems = process.env.QUANTITY;
 
 async function main() {
@@ -6,12 +6,11 @@ async function main() {
 
   console.log("Deploying contracts with the account:", deployer.address);
 
-  const marketplaceFactory = await ethers.getContractFactory("EvermoreMarketplace");
-  const marketplace = await marketplaceFactory.deploy();
-  await marketplace.waitForDeployment();
-  const marketplaceAddress = await marketplace.getAddress();
+  const marketplaceFactory = await ethers.getContractFactory("EvermoreMarketplace")
+  const marketplace = await marketplaceFactory.deploy()
+  await marketplace.deployed()
 
-  console.log("marketplace address:", marketplaceAddress);
+  console.log("marketplace address:", marketplace.address);
 }
 
 main()

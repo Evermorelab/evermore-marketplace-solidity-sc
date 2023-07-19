@@ -1,4 +1,4 @@
-const PRICE0 = ethers.parseEther(process.env.PRICE);
+const PRICE0 = ethers.utils.parseEther(process.env.PRICE);
 const nbCollectionItems = process.env.QUANTITY;
 const defautMarketplaceAddress = process.env.MARKETPLACE_ADDRESS;
 const baseURI = process.env.BASE_URI;
@@ -11,21 +11,21 @@ async function main() {
 
   console.log("Deploying contracts with the account:", deployer.address);
 
-  const evermoreNFTFactory = await ethers.getContractFactory( "EvermoreNFT", {
+  const evermoreNFTFactory = await ethers.getContractFactory("EvermoreNFT",
+  {
     libraries: {
       SignatureLibrary: signatureAddress,
     },
-  });
-  const evermoreNFT = await evermoreNFTFactory.connect(deployer).deploy(defautMarketplaceAddress, nbCollectionItems, baseUID, false);
-  await evermoreNFT.waitForDeployment();
+  })
+  const evermoreNFT = await evermoreNFTFactory.connect(deployer).deploy(defautMarketplaceAddress, nbCollectionItems, baseUID, false)
+  await evermoreNFT.deployed()
   if (baseURI) {
-    await evermoreNFT.setbaseURI(baseURI);
+    await evermoreNFT.setbaseURI(baseURI)
   }
-  await evermoreNFT.setRoyalty(royaltiesAddress, 1000); // 10% royalties
-  const evermoreNFTAddress = await evermoreNFT.getAddress();
+  await evermoreNFT.setRoyalty(royaltiesAddress, 1000) // 10% royalties
 
   console.log("marketplace address:", defautMarketplaceAddress);
-  console.log("evermoreNFT address:", evermoreNFTAddress);
+  console.log("evermoreNFT address:", evermoreNFT.address);
 }
 
 main()
