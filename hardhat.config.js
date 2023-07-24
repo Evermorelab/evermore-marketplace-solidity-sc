@@ -9,7 +9,7 @@ const METAMASK_PRIVATE_KEY = process.env.METAMASK_PRIVATE_KEY;
 
 
 module.exports = {
-  solidity: "0.8.9",
+  solidity: "0.8.19",
   settings: {
     optimizer: {
       enabled: true,
