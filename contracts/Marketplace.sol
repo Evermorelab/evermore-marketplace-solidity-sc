@@ -171,9 +171,6 @@ contract EvermoreMarketplace is ReentrancyGuard, Ownable {
 
         IERC721 nft = IERC721(_nftAddress);
         address _owner = nft.ownerOf(_tokenId);
-        if (nft.getApproved(_tokenId) != address(this) && !nft.isApprovedForAll(_owner, address(this))) {
-            revert NotApprovedForMarketplace();
-        }
 
         if (_tokenIdPerAddress[_nftAddress].length == 0) {
             nft_addresses.push(_nftAddress);
