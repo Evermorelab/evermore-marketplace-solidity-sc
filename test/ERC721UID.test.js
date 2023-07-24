@@ -1,6 +1,5 @@
 const { expect } = require("chai");
 require("chai").use(require("chai-as-promised"));
-const web3 = require("web3");
 
 describe("ERC721UID", function () {
 
