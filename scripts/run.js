@@ -8,6 +8,14 @@ const PRICE2 = ethers.utils.parseEther("0.4")
 const nbCollectionItems = 1000
 const IDENTITIES = {}
 
+async function signClaim(tokenId, receiver, signer) {
+  const message = `${receiver.address} claims token ${tokenId}`;
+  const messageHash = ethers.utils.id(message);
+  const messageBytes = ethers.utils.arrayify(messageHash);
+  const signature = await signer.signMessage(messageBytes);
+  return { messageHash, signature };
+}
+
 async function logListing(marketplace, nftAddress, nftId) {
   listing = await marketplace.getNFTListing(nftAddress, nftId)
   console.log(`>>> MARKETPLACE LISTINGS:
@@ -39,23 +47,10 @@ async function approveNFTClaim(evermoreNFT, owner, tokenId) {
   await evermoreNFT.connect(owner).addToAllowlist(tokenId)
 }
 
-async function newMintAndRegister(marketplace, evermoreNFT, owner, tokenId) {
-  let tokenPrice = await evermoreNFT.getItemPrice()
-  tokenPrice = ethers.utils.parseEther(ethers.utils.formatEther(tokenPrice.toString()))
-
-  let mintTx = await evermoreNFT.connect(owner).mint(owner.address, tokenId, {value: tokenPrice})
-  const mintTxReceipt = await mintTx.wait(1)
-  const outputTokenId = mintTxReceipt.events[0].args.tokenId
-  console.log("check approved: ", await evermoreNFT.getApproved(outputTokenId));
-  console.log("check isApprovedForAll: ", await evermoreNFT.isApprovedForAll(owner.address, marketplace.address));
-
-  await logListing(marketplace, evermoreNFT.address, outputTokenId)
-  return outputTokenId
-}
-
-async function claimNFT(marketplace, evermoreNFT, owner, tokenId) {
+async function claimNFT(marketplace, evermoreNFT, owner, tokenId, contractOwner) {
   console.log(`\n\n--------- CLAIM NFT with ID ${tokenId} ---------`)
-  let mintTx = await evermoreNFT.connect(owner).claim(owner.address, tokenId)
+  const { messageHash, signature } = await signClaim(tokenId, owner, contractOwner);
+  const mintTx = await evermoreNFT.connect(owner).claim(owner.address, tokenId, messageHash, signature);
   const mintTxReceipt = await mintTx.wait(1)
   const outputTokenId = mintTxReceipt.events[0].args.tokenId
   console.log("check approved: ", await evermoreNFT.getApproved(outputTokenId));
@@ -112,7 +107,16 @@ async function main() {
     const marketplace = await marketplaceFactory.deploy()
     await marketplace.deployed()
 
-    const evermoreNFTFactory = await ethers.getContractFactory("EvermoreNFT")
+    const libraryFactory = await ethers.getContractFactory("SignatureLibrary");
+    const library = await libraryFactory.deploy();
+    await library.deployed();
+    const libraryAddress = await library.address;
+
+    const evermoreNFTFactory = await ethers.getContractFactory("EvermoreNFT", {
+      libraries: {
+        SignatureLibrary: libraryAddress
+      }
+    })
     const evermoreNFT = await evermoreNFTFactory.connect(deployer).deploy(marketplace.address, nbCollectionItems, baseUID, false)
     await evermoreNFT.deployed()
     await evermoreNFT.setRoyalty(royaliesReceiver.address, 1000) // 10% royalties
@@ -131,7 +135,7 @@ async function main() {
     for (let i=0; i<nbToMint; i++) {
       //await approveNFTClaim(evermoreNFT, deployer, i+1)
       let tokenId = i+5;
-      await claimNFT(marketplace, evermoreNFT, owner, tokenId)
+      await claimNFT(marketplace, evermoreNFT, owner, tokenId, deployer)
       tokenIds.push(tokenId)
       console.log(`Minted and listed token ${tokenId} by owner ${IDENTITIES[owner.address]}`)
     }
