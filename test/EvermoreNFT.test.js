@@ -125,7 +125,7 @@ describe("EvermoreNFT", function () {
     await evermoreNFT.connect(this.owner).lockNFT(TOKEN_ID);
     await expect(
       claimNFT(evermoreNFT, TOKEN_ID, this.minter)
-    ).to.be.rejectedWith(/ERC721Lockable: Token is locked/i);
+    ).to.be.revertedWithCustomError(evermoreNFT, 'InvalidNFTLockState');
   });
 
   it("should by able to update the supply as admin", async function () {

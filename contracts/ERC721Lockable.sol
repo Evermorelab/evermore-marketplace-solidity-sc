@@ -15,22 +15,15 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 * 
 */
 
+error InvalidNFTLockState();
+
+
 abstract contract ERC721Lockable is ERC721 {
 
     mapping(uint256 => bool) public NFTLocked;
 
     event NFTLockeded(uint256 tokenId);
     event NFTUnlocked(uint256 tokenId);
-
-    modifier whenNotLocked(uint256 tokenId) {
-        _requireNotLocked(tokenId);
-        _;
-    }
-
-    modifier whenLocked(uint256 tokenId) {
-        _requireLocked(tokenId);
-        _;
-    }
 
     function _beforeTokenTransfer(
         address from,
@@ -50,11 +43,15 @@ abstract contract ERC721Lockable is ERC721 {
     }
 
     function _requireNotLocked(uint256 tokenId) internal view virtual {
-        require(!NFTLocked[tokenId], "ERC721Lockable: Token is locked");
+        if (NFTLocked[tokenId]) {
+            revert InvalidNFTLockState();
+        }
     }
 
     function _requireLocked(uint256 tokenId) internal view virtual {
-        require(NFTLocked[tokenId], "ERC721Lockable: Token is not locked");
+        if (!NFTLocked[tokenId]) {
+            revert InvalidNFTLockState();
+        }
     }
 
     function _lockAllNFTs(uint256 itemSupply) internal {
@@ -64,12 +61,14 @@ abstract contract ERC721Lockable is ERC721 {
         }
     }
 
-    function _lockNFT(uint256 _tokenId) internal virtual whenNotLocked(_tokenId) {
+    function _lockNFT(uint256 _tokenId) internal virtual {
+        _requireNotLocked(_tokenId);
         NFTLocked[_tokenId] = true;
         emit NFTLockeded(_tokenId);
     }
 
-    function _unlockNFT(uint256 _tokenId) internal virtual whenLocked(_tokenId) {
+    function _unlockNFT(uint256 _tokenId) internal virtual {
+        _requireLocked(_tokenId);
         NFTLocked[_tokenId] = false;
         emit NFTUnlocked(_tokenId);
     }

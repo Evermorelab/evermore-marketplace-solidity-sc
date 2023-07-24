@@ -25,7 +25,7 @@ describe("ERC721Lockable", function () {
     // Attempt to mint the locked NFT
     await expect(
       erc721Lockable.mint(receiver.address, TOKEN_ID)
-    ).to.be.rejectedWith(/ERC721Lockable: Token is locked/i);
+    ).to.be.revertedWithCustomError(erc721Lockable, 'InvalidNFTLockState');
   });
   
   it("should unlock NFT", async function () {
