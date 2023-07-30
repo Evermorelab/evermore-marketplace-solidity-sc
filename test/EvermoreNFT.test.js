@@ -31,19 +31,13 @@ describe("EvermoreNFT", function () {
     return evermoreNFT.connect(receiver).claim(receiver.address, tokenId, messageHash, signature);
   }
 
-  beforeEach(async function (init_with_lock=false) {
+  beforeEach(async function () {
     // Set up accounts
     [owner, other, receiver, minter] = await ethers.getSigners();
     this.owner = owner;
     this.other = other;
     this.receiver = receiver;
     this.minter = minter;
-
-    // deploy signature library
-    const Signature = await ethers.getContractFactory("SignatureLibrary");
-    signature = await Signature.deploy();
-    await signature.deployed();
-    const signatureAddress = await signature.address;
 
     // deploy marketplace
     const Marketplace = await ethers.getContractFactory("EvermoreMarketplace");
@@ -52,12 +46,8 @@ describe("EvermoreNFT", function () {
     this.marketplaceAddress = await marketplace.address;
 
     // deploy NFT
-    const EvermoreNFT = await ethers.getContractFactory( "EvermoreNFT", {
-      libraries: {
-        SignatureLibrary: signatureAddress,
-      },
-    });
-    evermoreNFT = await EvermoreNFT.connect(owner).deploy(this.marketplaceAddress, ITEM_SUPPLY, BASE_UID, init_with_lock);
+    const EvermoreNFT = await ethers.getContractFactory("EvermoreNFT");
+    evermoreNFT = await EvermoreNFT.connect(owner).deploy(this.marketplaceAddress, ITEM_SUPPLY, BASE_UID);
     await evermoreNFT.deployed();
     await evermoreNFT.connect(this.owner).setBaseURI(BASE_URI);
   });
@@ -69,43 +59,10 @@ describe("EvermoreNFT", function () {
     expect(isManager).to.be.true;
   });
 
-  it("should be able to lock NFT as MANAGER", async function () {
-    await evermoreNFT.connect(this.owner).grantRole(MANAGER_ROLE, other.address);
-    await evermoreNFT.connect(this.other).lockNFT(TOKEN_ID);
-    const isLocked = await evermoreNFT.isLocked(TOKEN_ID);
-    expect(isLocked).to.be.true;
-  });
-
-  it("should not be able to lock NFT as NON-MANAGER", async function () {
-    await expect(
-      evermoreNFT.connect(this.other).lockNFT(TOKEN_ID)
-    ).to.be.rejectedWith(/is missing role/i);
-  });
-
-  it("should be able to unlock NFT as MANAGER", async function () {
-    await evermoreNFT.connect(this.owner).grantRole(MANAGER_ROLE, other.address);
-    await evermoreNFT.connect(this.other).lockNFT(TOKEN_ID);
-    await evermoreNFT.connect(this.other).unlockNFT(TOKEN_ID);
-    const isLocked = await evermoreNFT.isLocked(TOKEN_ID);
-    expect(isLocked).to.be.false;
-  });
-
-  it("should not be able to unlock NFT as NON-MANAGER", async function () {
-    await evermoreNFT.connect(this.owner).lockNFT(TOKEN_ID);
-    await expect(
-      evermoreNFT.connect(this.other).unlockNFT(TOKEN_ID)
-    ).to.be.rejectedWith(/is missing role/i);
-  });
-
   it("should not be able to claim an NFT if tokenId higher than supply", async function () {
     await expect(
       claimNFT(evermoreNFT, ITEM_SUPPLY+1, this.other)
     ).to.be.revertedWithCustomError(evermoreNFT, 'InvalidTokenId');
-  });
-
-  it("should register a new NFT in the marketplace by default", async function () {
-    const registerMarketplace = await evermoreNFT.shouldRegisterMarketplace();
-    expect(registerMarketplace).to.equal(true);
   });
 
   it("should be able to claim an NFT if tokenId is not claimed", async function () {
@@ -119,13 +76,6 @@ describe("EvermoreNFT", function () {
     await expect(
       claimNFT(evermoreNFT, TOKEN_ID, this.other)
     ).to.be.rejectedWith(/ERC721: token already minted/i);
-  });
-
-  it("should not be able to claim an NFT if tokenId is locked", async function () {
-    await evermoreNFT.connect(this.owner).lockNFT(TOKEN_ID);
-    await expect(
-      claimNFT(evermoreNFT, TOKEN_ID, this.minter)
-    ).to.be.revertedWithCustomError(evermoreNFT, 'InvalidNFTLockState');
   });
 
   it("should by able to update the supply as admin", async function () {
@@ -349,5 +299,41 @@ describe("EvermoreNFT", function () {
       evermoreNFT.ownerOf(TOKEN_ID+1)
     ).to.eventually.equal(this.minter.address);
   });
+
+  // UNUSED EXTENSIONS
+  /* it("should be able to lock NFT as MANAGER", async function () {
+    await evermoreNFT.connect(this.owner).grantRole(MANAGER_ROLE, other.address);
+    await evermoreNFT.connect(this.other).lockNFT(TOKEN_ID);
+    const isLocked = await evermoreNFT.isLocked(TOKEN_ID);
+    expect(isLocked).to.be.true;
+  });
+
+  it("should not be able to lock NFT as NON-MANAGER", async function () {
+    await expect(
+      evermoreNFT.connect(this.other).lockNFT(TOKEN_ID)
+    ).to.be.rejectedWith(/is missing role/i);
+  });
+
+  it("should be able to unlock NFT as MANAGER", async function () {
+    await evermoreNFT.connect(this.owner).grantRole(MANAGER_ROLE, other.address);
+    await evermoreNFT.connect(this.other).lockNFT(TOKEN_ID);
+    await evermoreNFT.connect(this.other).unlockNFT(TOKEN_ID);
+    const isLocked = await evermoreNFT.isLocked(TOKEN_ID);
+    expect(isLocked).to.be.false;
+  });
+
+  it("should not be able to unlock NFT as NON-MANAGER", async function () {
+    await evermoreNFT.connect(this.owner).lockNFT(TOKEN_ID);
+    await expect(
+      evermoreNFT.connect(this.other).unlockNFT(TOKEN_ID)
+    ).to.be.rejectedWith(/is missing role/i);
+  });
+
+  it("should not be able to claim an NFT if tokenId is locked", async function () {
+    await evermoreNFT.connect(this.owner).lockNFT(TOKEN_ID);
+    await expect(
+      claimNFT(evermoreNFT, TOKEN_ID, this.minter)
+    ).to.be.revertedWithCustomError(evermoreNFT, 'InvalidNFTLockState');
+  });*/
 
 });
