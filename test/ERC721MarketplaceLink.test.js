@@ -14,7 +14,7 @@ describe("ERC721MarketplaceLink", function () {
     this.marketplaceAddress = marketplace.address;
     // deploy NFT
     const ERC721MarketplaceLink = await ethers.getContractFactory("ERC721MarketplaceLinkMock");
-    erc721MarketplaceLink = await ERC721MarketplaceLink.deploy(this.marketplaceAddress, true);
+    erc721MarketplaceLink = await ERC721MarketplaceLink.deploy(this.marketplaceAddress);
     await erc721MarketplaceLink.deployed();
   });
 
@@ -37,16 +37,6 @@ describe("ERC721MarketplaceLink", function () {
   });
 
   it("not minted token should not be registered in the marketplace", async function () {
-    const listing = await marketplace.getNFTListing(erc721MarketplaceLink.address, TOKEN_ID);
-    await expect(listing.seller).to.equal(NULL_ADDRESS);
-  });
-
-  it("should not register the token in the marketplace if the flag is false", async function () {
-    const ERC721MarketplaceLink = await ethers.getContractFactory("ERC721MarketplaceLinkMock");
-    erc721MarketplaceLink = await ERC721MarketplaceLink.deploy(this.marketplaceAddress, false);
-    await erc721MarketplaceLink.deployed();
-    const [minter] = await ethers.getSigners();
-    await erc721MarketplaceLink.mint(minter.address, TOKEN_ID);
     const listing = await marketplace.getNFTListing(erc721MarketplaceLink.address, TOKEN_ID);
     await expect(listing.seller).to.equal(NULL_ADDRESS);
   });
