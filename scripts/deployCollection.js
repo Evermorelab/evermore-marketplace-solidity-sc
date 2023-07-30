@@ -17,10 +17,10 @@ async function main() {
       SignatureLibrary: signatureAddress,
     },
   })
-  const evermoreNFT = await evermoreNFTFactory.connect(deployer).deploy(defautMarketplaceAddress, nbCollectionItems, baseUID, false)
+  const evermoreNFT = await evermoreNFTFactory.connect(deployer).deploy(defautMarketplaceAddress, nbCollectionItems, baseUID)
   await evermoreNFT.deployed()
   if (baseURI) {
-    await evermoreNFT.setbaseURI(baseURI)
+    await evermoreNFT.setBaseURI(baseURI)
   }
   await evermoreNFT.setRoyalty(royaltiesAddress, 1000) // 10% royalties
 

@@ -4,7 +4,6 @@ pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts/access/AccessControlDefaultAdminRules.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Royalty.sol";
-import "./ERC721Lockable.sol";
 import "./ERC721UID.sol";
 import "./ERC721MarketplaceLink.sol";
 import "./HistoryStorage.sol";
@@ -17,7 +16,7 @@ error InvalidSupply();
 error InvalidBatchSize();
 error InvalidPermissions();
 
-contract EvermoreNFT is ERC721Royalty, ERC721UID, ERC721Lockable, ERC721MarketplaceLink, AccessControlDefaultAdminRules {
+contract EvermoreNFT is ERC721Royalty, ERC721UID, ERC721MarketplaceLink, AccessControlDefaultAdminRules {
 
     // HISTORY DATA
     // History data for an item corresponding to the item's lifecycle; stored in a separate contract
@@ -64,8 +63,7 @@ contract EvermoreNFT is ERC721Royalty, ERC721UID, ERC721Lockable, ERC721Marketpl
     constructor(
         address _marketplaceContract,
         uint256 _itemSupply,
-        string memory _baseUID,
-        bool _initWithLock
+        string memory _baseUID
     )
         ERC721("Evermore NFT", "EVMNFT")
         AccessControlDefaultAdminRules(1, _msgSender()){
@@ -74,9 +72,6 @@ contract EvermoreNFT is ERC721Royalty, ERC721UID, ERC721Lockable, ERC721Marketpl
         _grantRole(MANAGER, _msgSender());
         setBaseUID(_baseUID);
         setItemSupply(_itemSupply);
-        if (_initWithLock) {
-            _lockAllNFTs(itemSupply); // lock all NFTs by default
-        }
         // Deploy HistoryStorage contract
         historyStorage = new HistoryStorage();
     }
@@ -91,14 +86,6 @@ contract EvermoreNFT is ERC721Royalty, ERC721UID, ERC721Lockable, ERC721Marketpl
         _safeMint(_receiver, _tokenId);
         _registerOnMarketplace(_tokenId);
         emit NFTClaimed(_tokenId);
-    }
-
-    function lockNFT(uint256 _tokenId) external onlyRole(MANAGER) {
-        _lockNFT(_tokenId);
-    }
-
-    function unlockNFT(uint256 _tokenId) external onlyRole(MANAGER) {
-        _unlockNFT(_tokenId);
     }
 
     function addItemEvent(uint256 _tokenId, string memory _eventURI) external {
@@ -154,7 +141,7 @@ contract EvermoreNFT is ERC721Royalty, ERC721UID, ERC721Lockable, ERC721Marketpl
 
     function _beforeTokenTransfer(address from, address to, uint256 tokenId, uint256 batchSize)
         internal
-        override(ERC721, ERC721Lockable)
+        override
     {
         if (batchSize != 1) {
             revert InvalidBatchSize();
@@ -165,7 +152,7 @@ contract EvermoreNFT is ERC721Royalty, ERC721UID, ERC721Lockable, ERC721Marketpl
         super._beforeTokenTransfer(from, to, tokenId, batchSize);
     }
 
-    function _burn (uint256 tokenId) internal override(ERC721, ERC721Lockable, ERC721Royalty) {
+    function _burn (uint256 tokenId) internal override(ERC721, ERC721Royalty) {
         super._burn(tokenId);
     }
 

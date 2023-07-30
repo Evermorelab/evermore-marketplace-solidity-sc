@@ -112,12 +112,8 @@ async function main() {
     await library.deployed();
     const libraryAddress = await library.address;
 
-    const evermoreNFTFactory = await ethers.getContractFactory("EvermoreNFT", {
-      libraries: {
-        SignatureLibrary: libraryAddress
-      }
-    })
-    const evermoreNFT = await evermoreNFTFactory.connect(deployer).deploy(marketplace.address, nbCollectionItems, baseUID, false)
+    const evermoreNFTFactory = await ethers.getContractFactory("EvermoreNFT")
+    const evermoreNFT = await evermoreNFTFactory.connect(deployer).deploy(marketplace.address, nbCollectionItems, baseUID)
     await evermoreNFT.deployed()
     await evermoreNFT.setRoyalty(royaliesReceiver.address, 1000) // 10% royalties
     await evermoreNFT.setBaseURI(baseURI)
