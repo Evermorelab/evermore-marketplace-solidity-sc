@@ -121,10 +121,6 @@ contract EvermoreNFT is ERC721Royalty, ERC721UID, ERC721MarketplaceLink, AccessC
         _setDefaultRoyalty(_recipient, _percentage);
     }
 
-    function setMarketplaceAddress(address _newMarketplaceAddress) public onlyRole(ADMIN) {
-        _setMarketplaceAddress(_newMarketplaceAddress);
-    }
-
     // Getter Functions
 
     function tokenURI(uint256 tokenId)

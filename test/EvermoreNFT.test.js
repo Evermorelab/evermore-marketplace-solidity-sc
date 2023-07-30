@@ -99,25 +99,6 @@ describe("EvermoreNFT", function () {
     expect(supply.toString()).to.equal(ITEM_SUPPLY.toString());
   });
 
-  it("should not be able to update the marketplace adderss as non-admin", async function () {
-    await expect(
-      evermoreNFT.connect(this.other).setMarketplaceAddress(this.other.address)
-    ).to.be.rejectedWith(/is missing role/i);
-    await evermoreNFT.connect(this.owner).grantRole(MANAGER_ROLE, this.other.address);
-    await expect(
-      evermoreNFT.connect(this.other).setMarketplaceAddress(this.other.address)
-    ).to.be.rejectedWith(/is missing role/i);
-    const marketplaceAddress = await evermoreNFT.marketplaceAddress();
-    expect(marketplaceAddress).to.equal(this.marketplaceAddress);
-  });
-
-  it("should be able to update the marketplace address as admin", async function () {
-    await evermoreNFT.connect(this.owner).grantRole(ADMIN_ROLE, this.other.address);
-    await evermoreNFT.connect(this.other).setMarketplaceAddress(this.other.address);
-    const marketplaceAddress = await evermoreNFT.marketplaceAddress();
-    expect(marketplaceAddress).to.equal(this.other.address);
-  });
-
   it("should not be able to update the baseUID as non-admin", async function () {
     const newBaseUID = "123";
     await expect(
