@@ -6,9 +6,8 @@ import "../ERC721MarketplaceLink.sol";
 
 contract ERC721MarketplaceLinkMock is ERC721MarketplaceLink {
     
-    constructor(address _newMarketplaceAddress, bool _marketplaceRegister) ERC721("MockNFT", "MOCK") {
+    constructor(address _newMarketplaceAddress) ERC721("MockNFT", "MOCK") {
         _setMarketplaceAddress(_newMarketplaceAddress);
-        _setRegisterMarketplace(_marketplaceRegister);
     }
 
     function mint(address to, uint256 tokenId) external {
