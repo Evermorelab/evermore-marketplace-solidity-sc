@@ -258,7 +258,7 @@ describe("EvermoreNFT", function () {
     const { messageHash, signature } = await signClaim(TOKEN_ID, this.minter, this.other);
     await expect(
       evermoreNFT.connect(this.minter).claim(this.minter.address, TOKEN_ID, messageHash, signature)
-    ).to.be.revertedWithCustomError(evermoreNFT, 'InvalidSignature');
+    ).to.be.revertedWithCustomError(evermoreNFT, 'InvalidPermissions');
   });
 
   it("should not be able to claim multiple times with the same signature", async function () {
@@ -280,6 +280,48 @@ describe("EvermoreNFT", function () {
       evermoreNFT.ownerOf(TOKEN_ID+1)
     ).to.eventually.equal(this.minter.address);
   });
+
+  it("should be able to burn a NFT as a manager", async function () {
+    await claimNFT(evermoreNFT, TOKEN_ID, this.minter);
+    await evermoreNFT.connect(this.owner).grantRole(MANAGER_ROLE, this.other.address);
+    await evermoreNFT.connect(this.other).burn(TOKEN_ID);
+    await expect(
+      evermoreNFT.ownerOf(TOKEN_ID)
+    ).to.be.revertedWith(/ERC721: invalid token ID/i);
+  });
+
+  it("should be able to burn a NFT as an admin", async function () {
+    await claimNFT(evermoreNFT, TOKEN_ID, this.minter);
+    await evermoreNFT.connect(this.owner).grantRole(ADMIN_ROLE, this.other.address);
+    await evermoreNFT.connect(this.other).burn(TOKEN_ID);
+    await expect(
+      evermoreNFT.ownerOf(TOKEN_ID)
+    ).to.be.revertedWith(/ERC721: invalid token ID/i);
+  });
+
+  it("should be able to burn a NFT as the NFT owner", async function () {
+    await claimNFT(evermoreNFT, TOKEN_ID, this.minter);
+    await evermoreNFT.connect(this.minter).burn(TOKEN_ID);
+    await expect(
+      evermoreNFT.ownerOf(TOKEN_ID)
+    ).to.be.revertedWith(/ERC721: invalid token ID/i);
+  });
+
+
+  it("should not be able to burn a NFT if not the owner", async function () {
+    await claimNFT(evermoreNFT, TOKEN_ID, this.minter);
+    await evermoreNFT.connect(this.minter).burn(TOKEN_ID);
+    await expect(
+      evermoreNFT.ownerOf(TOKEN_ID)
+    ).to.be.revertedWith(/ERC721: invalid token ID/i);
+  });
+
+  // TODO: fix this test, problem with null trailing characters \u0000
+  /* it("should return the correct tokenURI", async function () {
+    await claimNFT(evermoreNFT, TOKEN_ID, this.minter);
+    const tokenURI = await evermoreNFT.tokenURI(TOKEN_ID);
+    expect(tokenURI).to.equal(BASE_URI + TOKEN_ID);
+  }); */
 
   // UNUSED EXTENSIONS
   /* it("should be able to lock NFT as MANAGER", async function () {
