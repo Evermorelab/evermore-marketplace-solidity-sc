@@ -78,12 +78,19 @@ describe("EvermoreNFT", function () {
     ).to.be.rejectedWith(/ERC721: token already minted/i);
   });
 
-  it("should by able to update the supply as admin", async function () {
+  it("should be able to update the supply as admin", async function () {
     await evermoreNFT.connect(this.owner).grantRole(ADMIN_ROLE, this.other.address);
     const newSupply = ITEM_SUPPLY+5;
     await evermoreNFT.connect(this.other).setItemSupply(newSupply);
     const supply = await evermoreNFT.itemSupply();
     expect(supply.toString()).to.equal(newSupply.toString());
+  });
+
+  it("should not be able to update the supply to 0", async function () {
+    await evermoreNFT.connect(this.owner).grantRole(ADMIN_ROLE, this.other.address);
+    await expect(
+      evermoreNFT.connect(this.other).setItemSupply(0)
+    ).to.be.rejectedWith(/InvalidSupply/);
   });
 
   it("should not be able to update the supply as non-admin", async function () {
@@ -322,6 +329,16 @@ describe("EvermoreNFT", function () {
     const tokenURI = await evermoreNFT.tokenURI(TOKEN_ID);
     expect(tokenURI).to.equal(BASE_URI + TOKEN_ID);
   }); */
+
+  it("should not be able to transfer more than 1 NFT at the time", async function () {
+    const EvermoreNFTMock = await ethers.getContractFactory("EvermoreNFTMock");
+    const evermoreNFTMock = await EvermoreNFTMock.deploy(this.marketplaceAddress);
+    await claimNFT(evermoreNFTMock, TOKEN_ID, this.minter);
+    await claimNFT(evermoreNFTMock, TOKEN_ID+1, this.minter);
+    await expect(
+      evermoreNFTMock.connect(this.minter).beforeTokenTransfer(this.minter.address, this.receiver.address, TOKEN_ID, 2)
+    ).to.be.rejectedWith(/InvalidBatchSize/i);
+  });
 
   // UNUSED EXTENSIONS
   /* it("should be able to lock NFT as MANAGER", async function () {

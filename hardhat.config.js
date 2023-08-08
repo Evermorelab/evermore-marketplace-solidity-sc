@@ -2,6 +2,8 @@
 
 require("@nomiclabs/hardhat-ethers");
 require("dotenv").config();
+require('solidity-coverage');
+require("hardhat-gas-reporter");
 
 
 const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY;
