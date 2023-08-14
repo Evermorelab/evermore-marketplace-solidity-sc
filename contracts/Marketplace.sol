@@ -87,20 +87,18 @@ contract EvermoreMarketplace is ReentrancyGuard, Ownable {
     ///// Mofifiers /////
     /////////////////////
 
-    modifier isRegistered(address _nftAddress, uint256 _tokenId) {
-        Listing memory listing = s_listings[_nftAddress][_tokenId];
-        if (listing.seller == address(0)) {
+    modifier shouldBeRegistered(address _nftAddress, uint256 _tokenId) {
+        if (!_isRegistered(_nftAddress, _tokenId)) {
             revert NotRegistered(_nftAddress, _tokenId);
         }
         _;
     }
 
-    modifier notRegistered(
+    modifier shouldNotBeRegistered(
         address _nftAddress,
         uint256 _tokenId
     ) {
-        Listing memory listing = s_listings[_nftAddress][_tokenId];
-        if (listing.seller != address(0)) {
+        if (_isRegistered(_nftAddress, _tokenId)) {
             revert AlreadyRegistered(_nftAddress, _tokenId);
         }
         _;
@@ -151,6 +149,14 @@ contract EvermoreMarketplace is ReentrancyGuard, Ownable {
         _;
     }
 
+    function _isRegistered(address _nftAddress, uint256 _tokenId) internal view returns (bool) {
+        Listing memory listing = s_listings[_nftAddress][_tokenId];
+        if (listing.seller == address(0)) {
+            return false;
+        }
+        return true;
+    }
+
     /////////////////////
     // Main functions ///
     /////////////////////
@@ -164,8 +170,8 @@ contract EvermoreMarketplace is ReentrancyGuard, Ownable {
         address _nftAddress,
         uint256 _tokenId
     )
-        external
-        notRegistered(_nftAddress, _tokenId)
+        public
+        shouldNotBeRegistered(_nftAddress, _tokenId)
         isOwnerOrContract(_nftAddress, _tokenId, msg.sender)
     {
 
@@ -192,7 +198,7 @@ contract EvermoreMarketplace is ReentrancyGuard, Ownable {
         uint256 _tokenId
     )
         external
-        isRegistered(_nftAddress, _tokenId)
+        shouldBeRegistered(_nftAddress, _tokenId)
         isOwnerOrContract(_nftAddress, _tokenId, msg.sender)
     {
         // Remove the item from the list of registered items
@@ -243,6 +249,9 @@ contract EvermoreMarketplace is ReentrancyGuard, Ownable {
             revert PriceMustBeAboveZero();
         }
         IERC721 nft = IERC721(_nftAddress);
+        if (!_isRegistered(_nftAddress, _tokenId)){
+            registerItem(_nftAddress, _tokenId);
+        }
         if (nft.getApproved(_tokenId) != address(this) && !nft.isApprovedForAll(msg.sender, address(this))) {
             revert NotApprovedForMarketplace();
         }

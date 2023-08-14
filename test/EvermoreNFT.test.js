@@ -39,15 +39,9 @@ describe("EvermoreNFT", function () {
     this.receiver = receiver;
     this.minter = minter;
 
-    // deploy marketplace
-    const Marketplace = await ethers.getContractFactory("EvermoreMarketplace");
-    marketplace = await Marketplace.deploy();
-    await marketplace.deployed();
-    this.marketplaceAddress = await marketplace.address;
-
     // deploy NFT
     const EvermoreNFT = await ethers.getContractFactory("EvermoreNFT");
-    evermoreNFT = await EvermoreNFT.connect(owner).deploy(this.marketplaceAddress, ITEM_SUPPLY, BASE_UID);
+    evermoreNFT = await EvermoreNFT.connect(owner).deploy(ITEM_SUPPLY, BASE_UID);
     await evermoreNFT.deployed();
     await evermoreNFT.connect(this.owner).setBaseURI(BASE_URI);
   });
@@ -332,7 +326,7 @@ describe("EvermoreNFT", function () {
 
   it("should not be able to transfer more than 1 NFT at the time", async function () {
     const EvermoreNFTMock = await ethers.getContractFactory("EvermoreNFTMock");
-    const evermoreNFTMock = await EvermoreNFTMock.deploy(this.marketplaceAddress);
+    const evermoreNFTMock = await EvermoreNFTMock.deploy();
     await claimNFT(evermoreNFTMock, TOKEN_ID, this.minter);
     await claimNFT(evermoreNFTMock, TOKEN_ID+1, this.minter);
     await expect(
