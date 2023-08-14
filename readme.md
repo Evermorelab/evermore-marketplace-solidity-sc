@@ -42,12 +42,10 @@ ALCHEMY_API_KEY=""
 
 3. Update the collection initial variables in the .env file:
 ```
- # the address of the deployed Marketplace
-MARKETPLACE_ADDRESS="0x36042AA54644ABc270c490EdA913d20F85a3A7F2"
 # Contract owner address
 OWNER_ADDRESS=""
 QUANTITY=100
-BASE_URI="https://ipfs.io/ipfs/"
+BASE_URI="ipfs://"
 BASE_UID=""
 ROYALTIES_ADDRESS=""
 ```

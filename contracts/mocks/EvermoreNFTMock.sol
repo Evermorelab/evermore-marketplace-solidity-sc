@@ -6,9 +6,7 @@ import "../EvermoreNFT.sol";
 
 contract EvermoreNFTMock is EvermoreNFT {
 
-  constructor(
-    address marketplaceAddress
-  ) EvermoreNFT(marketplaceAddress, 10, "ipfs://aaa") {}
+  constructor() EvermoreNFT(10, "ipfs://aaa") {}
   
   function beforeTokenTransfer(address from, address to, uint256 tokenId, uint256 batchSize) public {
     _beforeTokenTransfer(from, to, tokenId, batchSize);

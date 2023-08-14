@@ -16,7 +16,7 @@ error InvalidSupply();
 error InvalidBatchSize();
 error InvalidPermissions();
 
-contract EvermoreNFT is ERC721Royalty, ERC721UID, ERC721MarketplaceLink, AccessControl {
+contract EvermoreNFT is ERC721Royalty, ERC721UID, AccessControl {
 
     // HISTORY DATA
     // History data for an item corresponding to the item's lifecycle; stored in a separate contract
@@ -88,7 +88,6 @@ contract EvermoreNFT is ERC721Royalty, ERC721UID, ERC721MarketplaceLink, AccessC
 
     /**
      * @dev Constructor function.
-     * @param _marketplaceContract address of the marketplace contract.
      * @param _itemSupply the total supply of the NFTs.
      * @param _baseUID the base UID of the NFTs.
      * Setup the default permissions for the calling address and
@@ -97,12 +96,10 @@ contract EvermoreNFT is ERC721Royalty, ERC721UID, ERC721MarketplaceLink, AccessC
      */
 
     constructor(
-        address _marketplaceContract,
         uint256 _itemSupply,
         string memory _baseUID
     )
         ERC721("Evermore NFT", "EVMNFT"){
-        _setMarketplaceAddress(_marketplaceContract);
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
         _grantRole(ADMIN, _msgSender());
         _grantRole(MANAGER, _msgSender());
@@ -131,7 +128,6 @@ contract EvermoreNFT is ERC721Royalty, ERC721UID, ERC721MarketplaceLink, AccessC
         }
         signatureUsed[signature] = true;
         _safeMint(_receiver, _tokenId);
-        _registerOnMarketplace(_tokenId);
         emit NFTClaimed(_tokenId);
     }
 
