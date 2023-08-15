@@ -3,6 +3,7 @@
 pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 
 /**
  * @title ERC721 Unique Identifier
@@ -28,7 +29,7 @@ abstract contract ERC721UID is ERC721 {
         returns (string memory)
     {
         require(_exists(tokenId), "ERC721UID: UID query for nonexistent token");
-        return bytes(baseUID).length > 0 ? string(abi.encodePacked(baseUID, "-", tokenId)) : "";
+        return bytes(baseUID).length > 0 ? string(abi.encodePacked(baseUID, "-", Strings.toString(tokenId))) : "";
     }
 
 }

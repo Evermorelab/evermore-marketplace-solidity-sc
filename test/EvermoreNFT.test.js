@@ -5,7 +5,7 @@ require("chai").use(require("chai-as-promised"));
 
 describe("EvermoreNFT", function () {
   const ITEM_SUPPLY = 100;
-  const BASE_URI="ipfs://QmQ1X";
+  const BASE_URI="ipfs://QmQ1X/";
   const BASE_UID= "MERCH-RED-COT-L-923";
   const TOKEN_ID = 1;
   const MANAGER_ROLE = ethers.utils.id("MANAGER");
@@ -317,12 +317,11 @@ describe("EvermoreNFT", function () {
     ).to.be.revertedWith(/ERC721: invalid token ID/i);
   });
 
-  // TODO: fix this test, problem with null trailing characters \u0000
-  /* it("should return the correct tokenURI", async function () {
+  it("should return the correct tokenURI", async function () {
     await claimNFT(evermoreNFT, TOKEN_ID, this.minter);
     const tokenURI = await evermoreNFT.tokenURI(TOKEN_ID);
     expect(tokenURI).to.equal(BASE_URI + TOKEN_ID);
-  }); */
+  });
 
   it("should not be able to transfer more than 1 NFT at the time", async function () {
     const EvermoreNFTMock = await ethers.getContractFactory("EvermoreNFTMock");
