@@ -3,10 +3,10 @@
 pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Royalty.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 import "./ERC721UID.sol";
-import "./ERC721MarketplaceLink.sol";
 import "./HistoryStorage.sol";
 import "./SignatureLibrary.sol";
 
@@ -226,7 +226,7 @@ contract EvermoreNFT is ERC721Royalty, ERC721UID, AccessControl {
         override
         returns (string memory)
     {
-        return bytes(baseURI).length > 0 ? string(abi.encodePacked(baseURI, tokenId)) : "";
+        return bytes(baseURI).length > 0 ? string(abi.encodePacked(baseURI, Strings.toString(tokenId))) : "";
     }
 
     // Override Functions

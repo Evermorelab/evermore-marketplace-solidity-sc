@@ -16,8 +16,7 @@ describe("ERC721UID", function () {
     expect(await erc721UID.baseUID()).to.equal(baseUID);
   });
 
-  // TODO: Fix this test, problem with null trailing characters
-  /* it("should return the correct UID for a token", async function () {
+  it("should return the correct UID for a token", async function () {
     const [minter] = await ethers.getSigners();
     const expectedUid = `${baseUID}-${TOKEN_ID}`;
 
@@ -25,7 +24,7 @@ describe("ERC721UID", function () {
     let uid = await erc721UID.tokenUID(TOKEN_ID);
     uid = uid.replace(/\0/g, ''); // Remove trailing zeros
     expect(uid).to.equal(expectedUid);
-  }); */
+  });
 
   it("should return not return a UID if the token is not minted yet", async function () {
     await expect(erc721UID.tokenUID(TOKEN_ID)).to.be.rejectedWith(/ERC721UID: UID query for nonexistent token/i);
