@@ -4,7 +4,12 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "script": "node scripts/run.js"
+    "script": "node scripts/run.js",
+    "test": "hardhat test",
+    "coverage": "hardhat coverage",
+    "compile": "hardhat compile",
+    "deploy": "hardhat run scripts/deploy.js --network polygon_mumbai",
+    "deploy-mainnet": "hardhat run scripts/deploy.js --network polygon"
   },
   "author": "Floriane Le Floch",
   "license": "ISC",
@@ -18,6 +23,7 @@
   "dependencies": {
     "@openzeppelin/contracts": "^4.9.2",
     "dotenv": "^16.0.3",
+    "hardhat-contract-sizer": "^2.10.0",
     "solidity-coverage": "^0.7.22"
   }
 }
