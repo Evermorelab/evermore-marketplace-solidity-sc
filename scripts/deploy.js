@@ -11,7 +11,7 @@ async function main() {
   await marketplace.deployed()
 
   const evermoreNFTFactory = await ethers.getContractFactory("EvermoreNFT")
-  const evermoreNFT = await evermoreNFTFactory.deploy(PRICE0, nbCollectionItems)
+  const evermoreNFT = await evermoreNFTFactory.deploy()
   await evermoreNFT.deployed()
 
   console.log("marketplace address:", marketplace.address);

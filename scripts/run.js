@@ -1,12 +1,12 @@
 const { ethers } = require("hardhat")
 
-const baseURI =  "/ipfs/bafybeih6cahp6rwzlgy2tn5sdjo33hixvem6gn5yfbtn2okfdikncnjaua"
-const baseUID = "ASCG-98069-RD"  // Random product code
-const PRICE0 = ethers.utils.parseEther("0.6")
-const PRICE1 = ethers.utils.parseEther("0.5")
-const PRICE2 = ethers.utils.parseEther("0.4")
-const nbCollectionItems = 1000
-const IDENTITIES = {}
+const baseURI =  "/ipfs/bafybeih6cahp6rwzlgy2tn5sdjo33hixvem6gn5yfbtn2okfdikncnjaua";
+const UID1 = ethers.utils.formatBytes32String("ASCG-98069-RD");  // Random product code
+const PRICE0 = ethers.utils.parseEther("0.6");
+const PRICE1 = ethers.utils.parseEther("0.5");
+const PRICE2 = ethers.utils.parseEther("0.4");
+const nbCollectionItems = 1000;
+const IDENTITIES = {};
 
 async function signClaim(tokenId, receiver, signer) {
   const message = `${receiver.address} claims token ${tokenId}`;
@@ -113,11 +113,19 @@ async function main() {
     const libraryAddress = await library.address;
 
     const evermoreNFTFactory = await ethers.getContractFactory("EvermoreNFT")
-    const evermoreNFT = await evermoreNFTFactory.connect(deployer).deploy(nbCollectionItems, baseUID)
+    const evermoreNFT = await evermoreNFTFactory.connect(deployer).deploy()
     await evermoreNFT.deployed()
     await evermoreNFT.setRoyalty(royaliesReceiver.address, 1000) // 10% royalties
     await evermoreNFT.setBaseURI(baseURI)
-    console.log("EvermoreNFT deployed to:", evermoreNFT.address)
+
+    // Add items to the NFT contract
+    const availableItems = Array.from({ length: nbCollectionItems }, (_, i) => `${i + 1}.json`);
+    // add items to the sc by batch of 500
+    batch_size = 500
+    for (let i=0; i<availableItems.length; i+=batch_size) {
+      console.log(`\n\n--------- ADD ITEMS ${i} to ${i+batch_size} ---------`)
+      await evermoreNFT.addItems(availableItems.slice(i, i+batch_size), UID1)
+    }
 
     // Making sure the marketplace can transfer all the users NFT
     await approveTransfers(marketplace, evermoreNFT, owner)

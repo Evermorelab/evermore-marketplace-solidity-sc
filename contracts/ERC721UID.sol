@@ -11,25 +11,38 @@ import "@openzeppelin/contracts/utils/Strings.sol";
  */
 
 
-abstract contract ERC721UID is ERC721 {
-    
-    string public baseUID;
+abstract contract ERC721UID {
 
-    event BaseUIDSet(string newBaseUID);
-
-    function _setbaseUID(string memory _newBaseUID) internal virtual {
-        baseUID = _newBaseUID;
-        emit BaseUIDSet(_newBaseUID);
+    // Structure to store token range instead of each token ID
+    // This is to save gas when minting a large number of tokens
+    // Both start and end are inclusive
+    struct TokenRange {
+        uint256 start;
+        uint256 end;
     }
 
-    function tokenUID(uint256 tokenId)
-        external
-        view
-        virtual
-        returns (string memory)
-    {
-        require(_exists(tokenId), "ERC721UID: UID query for nonexistent token");
-        return bytes(baseUID).length > 0 ? string(abi.encodePacked(baseUID, "-", Strings.toString(tokenId))) : "";
+    // Mapping from token UID to token ID
+    mapping(bytes32 => TokenRange[]) private _UIDtoTokens;
+
+    event UIDUpdate(bytes32 indexed _baseUID);
+
+    /**
+    * @dev Add a new tokens range for a given UID
+    * @param _baseUID bytes32 representing the UID
+    * @param startToken uint256 representing the start token ID
+    * @param endToken uint256 representing the end token ID
+    */
+    function _setUIDTokens(bytes32 _baseUID, uint256 startToken, uint256 endToken) internal virtual {
+        _UIDtoTokens[_baseUID].push(TokenRange(startToken, endToken));
+        emit UIDUpdate(_baseUID);
+    }
+
+    /**
+    * @dev Return the token ranges for a given UID
+    * @param _baseUID bytes32 representing the UID
+    */
+    function getUIDTokens(bytes32 _baseUID) external view virtual returns (TokenRange[] memory) {
+        return _UIDtoTokens[_baseUID];
     }
 
 }
