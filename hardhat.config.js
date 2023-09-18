@@ -1,6 +1,7 @@
 /** @type import('hardhat/config').HardhatUserConfig */
 
 require("@nomiclabs/hardhat-ethers");
+require("hardhat-contract-sizer");
 require("dotenv").config();
 require('solidity-coverage');
 require("hardhat-gas-reporter");
@@ -17,6 +18,13 @@ module.exports = {
       enabled: true,
       runs: 200,
     },
+  },
+  contractSizer: {
+    alphaSort: true,
+    disambiguatePaths: false,
+    runOnCompile: true,
+    strict: true,
+    only: ['EvermoreNFT'],
   },
   networks: {
     goerli: {
