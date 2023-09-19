@@ -28,7 +28,6 @@ abstract contract ERC721URIStorageBeforeMint is IERC4906, ERC721 {
      * @dev See {IERC721Metadata-tokenURI}.
      */
     function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
-        _requireMinted(tokenId);
         return _tokenURIs[tokenId];
     }
 

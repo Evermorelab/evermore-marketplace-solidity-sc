@@ -315,11 +315,28 @@ describe("EvermoreNFT", function () {
     let evermoreNFTLocal = await EvermoreNFTLocal.connect(owner).deploy();
     // add items
     const items = createItemsURI(ITEM_SUPPLY);
-    await evermoreNFTLocal.connect(this.owner).addItems(items, BASE_UID_SUPPLY);
+    await evermoreNFTLocal.connect(this.owner).addItems(BASE_UID_SUPPLY, items);
     await evermoreNFTLocal.deployed();
     await claimNFT(evermoreNFTLocal, TOKEN_ID, this.minter);
     const tokenURI = await evermoreNFTLocal.tokenURI(TOKEN_ID);
     expect(tokenURI).to.equal(simulateTokenURI(TOKEN_ID));
+  });
+
+  it("should be able to update a tokenURI as MANAGER", async function () {
+    const newTokenURI = "ipfs://123-YELLOW-M";
+    const tokenId = ITEM_SUPPLY - 1;
+    expect(await evermoreNFT.tokenURI(tokenId)).to.equal(simulateTokenURI(tokenId));
+    await evermoreNFT.connect(this.owner).grantRole(MANAGER_ROLE, this.other.address);
+    await evermoreNFT.connect(this.other).updateItems([tokenId], [newTokenURI]);
+    expect(await evermoreNFT.tokenURI(tokenId)).to.equal(newTokenURI);
+    expect(await evermoreNFT.tokenURI(TOKEN_ID)).to.equal(simulateTokenURI(TOKEN_ID));
+  });
+
+  it("should not be able to update a tokenURI as NON-MANAGER", async function () {
+    const newTokenURI = "ipfs://123-YELLOW-M";
+    await expect(
+      evermoreNFT.connect(this.other).updateItems([TOKEN_ID], [newTokenURI])
+    ).to.be.revertedWith(/is missing role/i);
   });
 
   // TRANSFER

@@ -171,6 +171,22 @@ contract EvermoreNFT is ERC721Royalty, ERC721URIStorageBeforeMint, ERC721UID, Ac
         emit SupplySet(itemSupply);
     }
 
+    /**
+     * @dev updateItems
+     * @param _uris the URIs of the items.
+     * @param _tokenIds the token IDs of the items.
+     * Update a batch of items in the NFT collection.
+     * Only a manager or an admin can update items.
+     */
+    function updateItems(uint256[] memory _tokenIds, string[] memory _uris) public onlyRole(MANAGER) {
+        if (_uris.length != _tokenIds.length) {
+            revert InvalidBatchSize();
+        }
+        for (uint256 i = 0; i < _uris.length; i++) {
+            _setTokenURI(_tokenIds[i], _uris[i]);
+        }
+    }
+
     // Setter Functions
 
     /**
