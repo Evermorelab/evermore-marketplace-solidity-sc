@@ -11,8 +11,6 @@ import "@openzeppelin/contracts/interfaces/IERC4906.sol";
 abstract contract ERC721URIStorageBeforeMint is IERC4906, ERC721 {
     using Strings for uint256;
 
-    string public baseURI;
-
     // Optional mapping for token URIs
     mapping(uint256 => string) private _tokenURIs;
     
@@ -26,30 +24,12 @@ abstract contract ERC721URIStorageBeforeMint is IERC4906, ERC721 {
         return interfaceId == bytes4(0x49064906) || super.supportsInterface(interfaceId);
     }
 
-    function _setBaseURI(string memory _newBaseURI) public {
-        baseURI = _newBaseURI;
-        emit BaseURISet(_newBaseURI);
-    }
-
     /**
      * @dev See {IERC721Metadata-tokenURI}.
      */
     function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
         _requireMinted(tokenId);
-
-        string memory _tokenURI = _tokenURIs[tokenId];
-        string memory base = baseURI;
-
-        // If there is no base URI, return the token URI.
-        if (bytes(base).length == 0) {
-            return _tokenURI;
-        }
-        // If both are set, concatenate the baseURI and tokenURI (via abi.encodePacked).
-        if (bytes(_tokenURI).length > 0) {
-            return string(abi.encodePacked(base, _tokenURI));
-        }
-
-        return super.tokenURI(tokenId);
+        return _tokenURIs[tokenId];
     }
 
     /**

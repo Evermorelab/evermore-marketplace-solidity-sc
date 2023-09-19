@@ -1,4 +1,3 @@
-const PRICE0 = ethers.utils.parseEther(process.env.PRICE);
 const baseURI = process.env.BASE_URI;
 const royaltiesAddress = process.env.ROYALTIES_ADDRESS;
 const signatureAddress = process.env.SIGNATURE_LIBRARY_ADDRESS;
@@ -8,18 +7,13 @@ async function main() {
 
   console.log("Deploying contracts with the account:", deployer.address);
 
-  const evermoreNFTFactory = await ethers.getContractFactory("EvermoreNFT",
-  {
-    libraries: {
-      SignatureLibrary: signatureAddress,
-    },
-  })
-  const evermoreNFT = await evermoreNFTFactory.connect(deployer).deploy()
-  await evermoreNFT.deployed()
+  const evermoreNFTFactory = await ethers.getContractFactory("EvermoreNFT");
+  const evermoreNFT = await evermoreNFTFactory.connect(deployer).deploy();
+  await evermoreNFT.deployed();
   if (baseURI) {
-    await evermoreNFT.setBaseURI(baseURI)
+    await evermoreNFT.setBaseURI(baseURI);
   }
-  await evermoreNFT.setRoyalty(royaltiesAddress, 1000) // 10% royalties
+  await evermoreNFT.setRoyalty(royaltiesAddress, 1000); // 10% royalties
 
   console.log("evermoreNFT address:", evermoreNFT.address);
 }

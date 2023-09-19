@@ -153,7 +153,7 @@ contract EvermoreNFT is ERC721Royalty, ERC721URIStorageBeforeMint, ERC721UID, Ac
     }
 
     /**
-     * @dev add a batch of items to the NFT collection.
+     * @dev addItems
      * @param _uris the URIs of the items.
      * @param _baseUID the UID of the items.
      * Add a batch of items to the NFT collection.
@@ -171,18 +171,7 @@ contract EvermoreNFT is ERC721Royalty, ERC721URIStorageBeforeMint, ERC721UID, Ac
         emit SupplySet(itemSupply);
     }
 
-
     // Setter Functions
-
-    /**
-     * @dev setBaseURI for the NFT collection.
-     * @param _newBaseURI the new base URI.
-     * Set the base URI of the NFTs.
-     * Only an admin can set the base URI.
-     */
-    function setBaseURI(string memory _newBaseURI) public onlyRole(ADMIN) {
-        super._setBaseURI(_newBaseURI);
-    }
 
     /**
      * @dev setRoyalty for the NFT collection.
