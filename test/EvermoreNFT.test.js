@@ -6,7 +6,6 @@ const { ethers } = require("hardhat");
 
 describe("EvermoreNFT", function () {
   const ITEM_SUPPLY = 10;
-  const BASE_URI="ipfs://QmQ1X/";
   const BASE_UID_SUPPLY= ethers.utils.formatBytes32String("MERCH-RED-COT-L-924");
   const TOKEN_ID = 1;
   const MANAGER_ROLE = ethers.utils.id("MANAGER");
@@ -56,7 +55,6 @@ describe("EvermoreNFT", function () {
     const EvermoreNFT = await ethers.getContractFactory("EvermoreNFT");
     evermoreNFT = await EvermoreNFT.connect(owner).deploy();
     await evermoreNFT.deployed();
-    await evermoreNFT.connect(this.owner).setBaseURI(BASE_URI);
     const items = createItemsURI(ITEM_SUPPLY);
     await evermoreNFT.connect(this.owner).addItems(items, BASE_UID_SUPPLY);
   });
@@ -100,29 +98,6 @@ describe("EvermoreNFT", function () {
     await expect(
       claimNFT(evermoreNFT, ITEM_SUPPLY + 1, this.minter)
     ).to.be.revertedWithCustomError(evermoreNFT, 'InvalidTokenId');
-  });
-
-  // URI
-
-  it("should not be able to update the baseURI as non-admin", async function () {
-    const newBaseURI = "123";
-    await expect(
-      evermoreNFT.connect(this.other).setBaseURI(newBaseURI)
-    ).to.be.rejectedWith(/is missing role/i);
-    await evermoreNFT.connect(this.owner).grantRole(MANAGER_ROLE, this.other.address);
-    await expect(
-      evermoreNFT.connect(this.other).setBaseURI(newBaseURI)
-    ).to.be.rejectedWith(/is missing role/i);
-    const baseURI = await evermoreNFT.baseURI();
-    expect(baseURI).to.equal(BASE_URI);
-  });
-
-  it("should be able to update the baseURI as admin", async function () {
-    const newBaseURI = "123";
-    await evermoreNFT.connect(this.owner).grantRole(ADMIN_ROLE, this.other.address);
-    await evermoreNFT.connect(this.other).setBaseURI(newBaseURI);
-    const baseURI = await evermoreNFT.baseURI();
-    expect(baseURI).to.equal(newBaseURI);
   });
 
   // ROYALTIES
@@ -332,16 +307,7 @@ describe("EvermoreNFT", function () {
   it("should return the correct tokenURI", async function () {
     await claimNFT(evermoreNFT, TOKEN_ID, this.minter);
     const tokenURI = await evermoreNFT.tokenURI(TOKEN_ID);
-    expect(tokenURI).to.equal(BASE_URI + simulateTokenURI(TOKEN_ID));
-  });
-
-  it("should return the correct tokenURI after baseURI update", async function () {
-    const newBaseURI = "ipfs://123";
-    await evermoreNFT.connect(this.owner).grantRole(ADMIN_ROLE, this.other.address);
-    await evermoreNFT.connect(this.other).setBaseURI(newBaseURI);
-    await claimNFT(evermoreNFT, TOKEN_ID, this.minter);
-    const tokenURI = await evermoreNFT.tokenURI(TOKEN_ID);
-    expect(tokenURI).to.equal(newBaseURI + simulateTokenURI(TOKEN_ID));
+    expect(tokenURI).to.equal(simulateTokenURI(TOKEN_ID));
   });
 
   it("should return the correct tokenURI if no baseURI", async function () {
