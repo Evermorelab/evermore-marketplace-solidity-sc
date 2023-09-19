@@ -56,7 +56,7 @@ describe("EvermoreNFT", function () {
     evermoreNFT = await EvermoreNFT.connect(owner).deploy();
     await evermoreNFT.deployed();
     const items = createItemsURI(ITEM_SUPPLY);
-    await evermoreNFT.connect(this.owner).addItems(items, BASE_UID_SUPPLY);
+    await evermoreNFT.connect(this.owner).addItems(BASE_UID_SUPPLY, items);
   });
 
   it("should the owner be also an ADMIN and MANAGER", async function () {
@@ -78,7 +78,7 @@ describe("EvermoreNFT", function () {
     const baseUID2 = ethers.utils.formatBytes32String("MERCH-YEL-COT-XXL-923231");
     const items = createItemsURI(ITEM_SUPPLY);
     await evermoreNFT.connect(this.owner).grantRole(MANAGER_ROLE, this.other.address);
-    await evermoreNFT.connect(this.other).addItems(items, baseUID2);
+    await evermoreNFT.connect(this.other).addItems(baseUID2, items);
 
     // check items
     let tokens = await evermoreNFT.getUIDTokens(baseUID2);
@@ -90,7 +90,7 @@ describe("EvermoreNFT", function () {
     const baseUID2 = ethers.utils.formatBytes32String("MERCH-YEL-COT-XXL-923231");
     const items = createItemsURI(ITEM_SUPPLY);
     await expect(
-      evermoreNFT.connect(this.other).addItems(items, baseUID2)
+      evermoreNFT.connect(this.other).addItems(baseUID2, items)
     ).to.be.revertedWith(/is missing role/i);
   });
 
@@ -329,7 +329,7 @@ describe("EvermoreNFT", function () {
     const evermoreNFTMock = await EvermoreNFTMock.deploy();
     await evermoreNFTMock.deployed();
     const items = createItemsURI(ITEM_SUPPLY);
-    await evermoreNFTMock.connect(this.owner).addItems(items, BASE_UID_SUPPLY);
+    await evermoreNFTMock.connect(this.owner).addItems(BASE_UID_SUPPLY, items);
     await claimNFT(evermoreNFTMock, TOKEN_ID, this.minter);
     await claimNFT(evermoreNFTMock, TOKEN_ID+1, this.minter);
     await expect(
