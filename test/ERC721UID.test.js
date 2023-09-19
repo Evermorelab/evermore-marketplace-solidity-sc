@@ -15,9 +15,9 @@ describe("ERC721UID", function () {
     const amount2 = 13;
     const baseUID1 = ethers.utils.formatBytes32String("MERCH-YEL-COT-M-923");
     const baseUID2 = ethers.utils.formatBytes32String("MERCH-YEL-COT-L-923");
-    await erc721UID.addItems(amount1, baseUID1);
-    await erc721UID.addItems(amount2, baseUID2);
-    await erc721UID.addItems(amount1, baseUID1);
+    await erc721UID.addItems(baseUID1, amount1);
+    await erc721UID.addItems(baseUID2, amount2);
+    await erc721UID.addItems(baseUID1, amount1);
     let tokens1 = await erc721UID.getUIDTokens(baseUID1);
     let tokens2 = await erc721UID.getUIDTokens(baseUID2);
 

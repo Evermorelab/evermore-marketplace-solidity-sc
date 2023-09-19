@@ -159,7 +159,7 @@ contract EvermoreNFT is ERC721Royalty, ERC721URIStorageBeforeMint, ERC721UID, Ac
      * Add a batch of items to the NFT collection.
      * Only a manager or an admin can add items.
      */
-    function addItems(string[] memory _uris, bytes32 _baseUID) public onlyRole(MANAGER) {
+    function addItems(bytes32 _baseUID, string[] memory _uris) public onlyRole(MANAGER) {
         // get the next available token ID and set the token URI and UID for each token
         uint256 startTokenId = itemSupply + 1; // Make sure to start at 1
         for (uint256 i = 0; i < _uris.length; i++) {

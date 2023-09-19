@@ -124,7 +124,7 @@ async function main() {
     batch_size = 500
     for (let i=0; i<availableItems.length; i+=batch_size) {
       console.log(`\n\n--------- ADD ITEMS ${i} to ${i+batch_size} ---------`)
-      await evermoreNFT.addItems(availableItems.slice(i, i+batch_size), UID1)
+      await evermoreNFT.addItems(UID1, availableItems.slice(i, i+batch_size))
     }
 
     // Making sure the marketplace can transfer all the users NFT
