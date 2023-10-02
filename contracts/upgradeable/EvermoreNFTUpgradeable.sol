@@ -1,15 +1,18 @@
 //SPDX-License-Identifier: UNLICENSED
 
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.21;
 
-import "@openzeppelin/contracts/access/AccessControl.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Royalty.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
-import "./ERC721UID.sol";
-import "./HistoryStorage.sol";
-import "./SignatureLibrary.sol";
-import "./ERC721URIStorageBeforeMint.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721URIStorageUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721RoyaltyUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+
+// Custom contracts
+import "./ERC721UIDUpgradeable.sol";
+import "./HistoryStorageUpgradeable.sol";
+import "./ERC721URIStorageBeforeMintUpgradeable.sol";
+import "../SignatureLibrary.sol";
 
 error SignatureAlreadyUsed();
 error InvalidTokenId();
@@ -17,13 +20,16 @@ error InvalidSupply();
 error InvalidBatchSize();
 error InvalidPermissions();
 
-contract EvermoreNFT is ERC721Royalty, ERC721URIStorageBeforeMint, ERC721UID, AccessControl {
+contract EvermoreNFTUpgradeable is Initializable, ERC721RoyaltyUpgradeable, ERC721URIStorageBeforeMintUpgradeable, AccessControlUpgradeable, UUPSUpgradeable {
 
     // HISTORY DATA
     // History data for an item corresponding to the item's lifecycle; stored in a separate contract
     // The reading functions are public, but the writing functions are only accessible by the NFT contract
     // The reading functions are not implemented here as the contract is too large
-    HistoryStorage public historyStorage;
+    HistoryStorageUpgradeable public historyStorage;
+
+    // UID DATA
+    ERC721UIDUpgradeable public uidContract;
 
     // ROLES
     // Role to manage the smart contract such as setting fees, supply, etc.
@@ -59,48 +65,35 @@ contract EvermoreNFT is ERC721Royalty, ERC721URIStorageBeforeMint, ERC721UID, Ac
         }
     }
 
-    /**
-     * @dev _eventTokenTrusted `tokenId`.
-     *
-     * Requirements:
-     *
-     * - The caller must be either the owner, a manager, an admin, or an event manager to be considered trusted.
-     */
-    function _eventTokenTrusted(uint256 tokenId) private view {
-        if (!hasRole(EVENT_MANAGER, _msgSender())) {
-            _tokenTrusted(tokenId);
-        }
+    // SETUP FUNCTIONS
+
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
     }
 
     /**
-     * @dev _allowedSignClaim `sender`.
-     *
-     * Requirements:
-     *
-     * - The caller must be either a manager or an admin to be able to sign a claim.
-     */
-    function _allowedSignClaim(address _sender) private view {
-        if (!hasRole(MANAGER, _sender) && !hasRole(ADMIN, _sender)) {
-            revert InvalidPermissions();
-        }
-    }
-
-    /**
-     * @dev Constructor function.
-     * Setup the default permissions for the calling address and
-     * the marketplace contract, the base URI, and the item supply.
-     * Deploy the HistoryStorage contract.
+     * @dev Initializer function.
+     * Run the initialisations and setup the default permissions for the calling address
      */
 
-    constructor(
-    )
-        ERC721("Evermore NFT", "EVMNFT"){
+    function initialize() initializer public {
+        __ERC721_init("Evermore NFT", "EVMNFT");
+        __ERC721URIStorage_init();
+        __ERC721Royalty_init();
+        __AccessControl_init();
+        __UUPSUpgradeable_init();
+
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
         _grantRole(ADMIN, _msgSender());
         _grantRole(MANAGER, _msgSender());
-        // Deploy HistoryStorage contract
-        historyStorage = new HistoryStorage();
     }
+
+    function _authorizeUpgrade(address newImplementation)
+        internal
+        onlyRole(ADMIN)
+        override
+    {}
 
     // NFT MANAGEMENT FUNCTIONS
 
@@ -117,7 +110,10 @@ contract EvermoreNFT is ERC721Royalty, ERC721URIStorageBeforeMint, ERC721UID, Ac
 
     // TODO: make sure the hash corresponds to the correct tokenId and receiver
     function claim(address _receiver, uint256 _tokenId, bytes32 hash, bytes memory signature) public {
-        _allowedSignClaim(SignatureLibrary.recoverSigner(hash, signature));
+        address _signer = SignatureLibrary.recoverSigner(hash, signature);
+        if (!hasRole(MANAGER, _signer) && !hasRole(ADMIN, _signer)) {
+            revert InvalidPermissions();
+        }
         if (signatureUsed[signature]) {
             revert SignatureAlreadyUsed();
         }
@@ -127,29 +123,19 @@ contract EvermoreNFT is ERC721Royalty, ERC721URIStorageBeforeMint, ERC721UID, Ac
     }
 
     /**
-     * @dev addItemEvent
+     * @dev addItemData
      * @param _tokenId the token ID of the NFT.
-     * @param _eventURI the URI of the event.
-     * Add an event to the NFT lifecycle.
+     * @param _dataURI the URI of the event.
+     * @param isCondition whether the data is a condition. If not, it is a general event.
+     * Add data into the NFT lifecycle.
      * The event is stored in the HistoryStorage contract.
      * Only the owner, a manager, an admin, or an event manager can add an event.
      */
-    function addItemEvent(uint256 _tokenId, string memory _eventURI) external {
-        _eventTokenTrusted(_tokenId);
-        historyStorage.addItemEvent(_tokenId, _eventURI);
-    }
-
-    /**
-     * @dev addItemCondition
-     * @param _tokenId the token ID of the NFT.
-     * @param _conditionURI the URI of the condition.
-     * Add a condition to the NFT lifecycle.
-     * The condition is stored in the HistoryStorage contract.
-     * Only the owner, a manager, an admin, or an event manager can add a condition.
-     */
-    function addItemCondition(uint256 _tokenId, string memory _conditionURI) external {
-        _eventTokenTrusted(_tokenId);
-        historyStorage.addItemCondition(_tokenId, _conditionURI);
+    function addItemData(uint256 _tokenId, string memory _dataURI, bool isCondition) external {
+        if (!hasRole(EVENT_MANAGER, _msgSender())) {
+            _tokenTrusted(_tokenId);
+        }
+        historyStorage.addItemData(_tokenId, _dataURI, isCondition);
     }
 
     /**
@@ -166,7 +152,7 @@ contract EvermoreNFT is ERC721Royalty, ERC721URIStorageBeforeMint, ERC721UID, Ac
             uint256 tokenId = startTokenId + i;
             _setTokenURI(tokenId, _uris[i]);
         }
-        _setUIDTokens(_baseUID, startTokenId, startTokenId + _uris.length - 1);
+        uidContract.setUIDTokens(_baseUID, startTokenId, startTokenId + _uris.length - 1);
         itemSupply += _uris.length;
         emit SupplySet(itemSupply);
     }
@@ -187,6 +173,19 @@ contract EvermoreNFT is ERC721Royalty, ERC721URIStorageBeforeMint, ERC721UID, Ac
         }
     }
 
+    /**
+     * @dev burn a NFT
+     * @param tokenId the token ID of the NFT.
+     * Burn the NFT.
+     * Only the owner, a manager, or an admin can burn the NFT.
+     */
+    function burn(uint256 tokenId) public virtual {
+        if (!_isApprovedOrOwner(_msgSender(), tokenId)) {
+            _tokenTrusted(tokenId);
+        }
+        _burn(tokenId);
+    }
+
     // Setter Functions
 
     /**
@@ -201,42 +200,49 @@ contract EvermoreNFT is ERC721Royalty, ERC721URIStorageBeforeMint, ERC721UID, Ac
     }
 
     /**
-     * @dev burn a NFT
-     * @param tokenId the token ID of the NFT.
-     * Burn the NFT.
-     * Only the owner, a manager, or an admin can burn the NFT.
+     * @dev setHistoryStorage
+     * @param _historyStorage the address of the HistoryStorage contract.
+     * Set the address of the HistoryStorage contract.
+     * Only an admin can set the address.
      */
-    function burn(uint256 tokenId) public virtual {
-        if (!_isApprovedOrOwner(_msgSender(), tokenId)) {
-            _tokenTrusted(tokenId);
-        }
-        _burn(tokenId);
+    function setHistoryStorage(address _historyStorage) public onlyRole(ADMIN) {
+        historyStorage = HistoryStorageUpgradeable(_historyStorage);
+    }
+
+    /**
+     * @dev setUIDContract
+     * @param _uidContract the address of the UID contract.
+     * Set the address of the UID contract.
+     * Only an admin can set the address.
+     */
+    function setUIDContract(address _uidContract) public onlyRole(ADMIN) {
+        uidContract = ERC721UIDUpgradeable(_uidContract);
     }
 
     // Override Functions
+
+    function _burn(uint256 tokenId) internal override(ERC721RoyaltyUpgradeable, ERC721URIStorageBeforeMintUpgradeable) {
+        super._burn(tokenId);
+    }
 
     function _beforeTokenTransfer(address from, address to, uint256 tokenId, uint256 batchSize)
         internal
         override
     {
         if (batchSize != 1 && from == address(0)) {
-            revert InvalidBatchSize();
+             revert InvalidBatchSize();
         }
-        if (tokenId > itemSupply || tokenId < 1 ) {
+        if (tokenId > itemSupply || tokenId < 1 || bytes(tokenURI(tokenId)).length == 0 ) {
             revert InvalidTokenId();
         }
         super._beforeTokenTransfer(from, to, tokenId, batchSize);
-    }
-
-    function _burn(uint256 tokenId) internal override(ERC721Royalty, ERC721URIStorageBeforeMint) {
-        super._burn(tokenId);
     }
 
     function supportsInterface(bytes4 interfaceId)
         public
         view
         virtual
-        override(ERC721Royalty, AccessControl, ERC721URIStorageBeforeMint)
+        override(ERC721RoyaltyUpgradeable, AccessControlUpgradeable, ERC721URIStorageBeforeMintUpgradeable)
         returns (bool)
     {
         return super.supportsInterface(interfaceId);
@@ -246,7 +252,7 @@ contract EvermoreNFT is ERC721Royalty, ERC721URIStorageBeforeMint, ERC721UID, Ac
         public
         view
         virtual
-        override(ERC721, ERC721URIStorageBeforeMint)
+        override(ERC721Upgradeable, ERC721URIStorageBeforeMintUpgradeable)
         returns (string memory)
     {
         return super.tokenURI(tokenId);

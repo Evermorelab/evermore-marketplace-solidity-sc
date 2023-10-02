@@ -13,8 +13,8 @@ describe("ERC721UID", function () {
   it("should return the correct tokens range for UID", async function () {
     const amount1 = 10;
     const amount2 = 13;
-    const baseUID1 = ethers.utils.formatBytes32String("MERCH-YEL-COT-M-923");
-    const baseUID2 = ethers.utils.formatBytes32String("MERCH-YEL-COT-L-923");
+    const baseUID1 = "MERCH-YEL-COT-M-923";
+    const baseUID2 = "MERCH-YEL-COT-L-923";
     await erc721UID.addItems(baseUID1, amount1);
     await erc721UID.addItems(baseUID2, amount2);
     await erc721UID.addItems(baseUID1, amount1);

@@ -18,3 +18,9 @@
 
 # env file
 .env
+
+# Ignore solidity coverage
+coverage.json
+
+# Ignore openzeppelin
+.openzeppelin/
