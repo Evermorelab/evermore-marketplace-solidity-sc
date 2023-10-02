@@ -16,7 +16,7 @@ contract ERC721UIDMock is ERC721UID, ERC721 {
         _safeMint(to, tokenId);
     }
 
-    function addItems(bytes32 _tokenUID, uint256 _amount) external {
+    function addItems(string memory _tokenUID, uint256 _amount) external {
         uint256 startTokenId = itemSupply + 1; // Make sure to start at 1
         _setUIDTokens(_tokenUID, startTokenId, startTokenId + _amount - 1);
         itemSupply += _amount;

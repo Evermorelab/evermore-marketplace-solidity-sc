@@ -2,9 +2,6 @@
 
 pragma solidity ^0.8.19;
 
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
-
 /**
  * @title ERC721 Unique Identifier
  * @dev ERC721 token with unique identifier
@@ -22,26 +19,26 @@ abstract contract ERC721UID {
     }
 
     // Mapping from token UID to token ID
-    mapping(bytes32 => TokenRange[]) private _UIDtoTokens;
+    mapping(string => TokenRange[]) private _UIDtoTokens;
 
-    event UIDUpdate(bytes32 indexed _baseUID);
+    event UIDUpdate(string indexed _baseUID);
 
     /**
     * @dev Add a new tokens range for a given UID
-    * @param _baseUID bytes32 representing the UID
+    * @param _baseUID string representing the UID
     * @param startToken uint256 representing the start token ID
     * @param endToken uint256 representing the end token ID
     */
-    function _setUIDTokens(bytes32 _baseUID, uint256 startToken, uint256 endToken) internal virtual {
+    function _setUIDTokens(string memory _baseUID, uint256 startToken, uint256 endToken) internal virtual {
         _UIDtoTokens[_baseUID].push(TokenRange(startToken, endToken));
         emit UIDUpdate(_baseUID);
     }
 
     /**
     * @dev Return the token ranges for a given UID
-    * @param _baseUID bytes32 representing the UID
+    * @param _baseUID string representing the UID
     */
-    function getUIDTokens(bytes32 _baseUID) external view virtual returns (TokenRange[] memory) {
+    function getUIDTokens(string memory _baseUID) external view virtual returns (TokenRange[] memory) {
         return _UIDtoTokens[_baseUID];
     }
 

@@ -1,7 +1,7 @@
 const { ethers } = require("hardhat")
 
 const baseURI =  "/ipfs/bafybeih6cahp6rwzlgy2tn5sdjo33hixvem6gn5yfbtn2okfdikncnjaua";
-const UID1 = ethers.utils.formatBytes32String("ASCG-98069-RD");  // Random product code
+const UID1 = "ASCG-98069-RD";  // Random product code
 const PRICE0 = ethers.utils.parseEther("0.6");
 const PRICE1 = ethers.utils.parseEther("0.5");
 const PRICE2 = ethers.utils.parseEther("0.4");
@@ -106,11 +106,6 @@ async function main() {
     const marketplaceFactory = await ethers.getContractFactory("EvermoreMarketplace")
     const marketplace = await marketplaceFactory.deploy()
     await marketplace.deployed()
-
-    const libraryFactory = await ethers.getContractFactory("SignatureLibrary");
-    const library = await libraryFactory.deploy();
-    await library.deployed();
-    const libraryAddress = await library.address;
 
     const evermoreNFTFactory = await ethers.getContractFactory("EvermoreNFT")
     const evermoreNFT = await evermoreNFTFactory.connect(deployer).deploy()

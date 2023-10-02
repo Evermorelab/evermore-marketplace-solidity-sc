@@ -8,20 +8,23 @@
     "test": "hardhat test",
     "coverage": "hardhat coverage",
     "compile": "hardhat compile",
-    "deploy-nft": "hardhat run scripts/deployNFT.js --network polygon_mumbai",
-    "deploy-nft-mainnet": "hardhat run scripts/deployNFT.js --network polygon"
+    "deploy-nft": "hardhat run scripts/deployNFTUpgradable.js --network polygon_mumbai",
+    "deploy-nft-mainnet": "hardhat run scripts/deployNFTUpgradable.js --network polygon"
   },
   "author": "Floriane Le Floch",
   "license": "ISC",
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^1.0.2",
     "@nomiclabs/hardhat-ethers": "^2.2.3",
+    "@nomiclabs/hardhat-etherscan": "^3.1.7",
+    "@openzeppelin/hardhat-upgrades": "^1.28.0",
     "ethers": "^5.7.2",
     "hardhat": "^2.14.1",
     "hardhat-gas-reporter": "^1.0.9"
   },
   "dependencies": {
     "@openzeppelin/contracts": "^4.9.2",
+    "@openzeppelin/contracts-upgradeable": "^4.9.3",
     "dotenv": "^16.0.3",
     "hardhat-contract-sizer": "^2.10.0",
     "solidity-coverage": "^0.7.22"
