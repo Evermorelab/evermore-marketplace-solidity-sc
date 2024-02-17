@@ -36,7 +36,7 @@ module.exports = {
   },
   etherscan: {
     apiKey: process.env.POLYGONSCAN_API_KEY,
- },
+  },
   networks: {
     goerli: {
       url: `https://eth-goerli.alchemyapi.io/v2/${ALCHEMY_API_KEY}`,
@@ -54,6 +54,10 @@ module.exports = {
       url: "https://alfajores-forno.celo-testnet.org",
       accounts: [METAMASK_PRIVATE_KEY],
       chainId: 44787
+    },
+    polygon: {
+      url: `https://polygon-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY_POLYGON}`,
+      accounts: [METAMASK_PRIVATE_KEY]
     },
   },
 };
