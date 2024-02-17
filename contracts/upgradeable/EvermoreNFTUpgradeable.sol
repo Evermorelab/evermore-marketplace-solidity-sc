@@ -20,8 +20,13 @@ error InvalidSupply();
 error InvalidBatchSize();
 error InvalidPermissions();
 
-contract EvermoreNFTUpgradeable is Initializable, ERC721RoyaltyUpgradeable, ERC721URIStorageBeforeMintUpgradeable, AccessControlUpgradeable, UUPSUpgradeable {
-
+contract EvermoreNFTUpgradeable is
+    Initializable,
+    ERC721RoyaltyUpgradeable,
+    ERC721URIStorageBeforeMintUpgradeable,
+    AccessControlUpgradeable,
+    UUPSUpgradeable
+{
     // HISTORY DATA
     // History data for an item corresponding to the item's lifecycle; stored in a separate contract
     // The reading functions are public, but the writing functions are only accessible by the NFT contract
@@ -77,8 +82,8 @@ contract EvermoreNFTUpgradeable is Initializable, ERC721RoyaltyUpgradeable, ERC7
      * Run the initialisations and setup the default permissions for the calling address
      */
 
-    function initialize() initializer public {
-        __ERC721_init("Evermore NFT", "EVMNFT");
+    function initialize() public initializer {
+        __ERC721_init("Evermore NFT", "EVRMNFT");
         __ERC721URIStorage_init();
         __ERC721Royalty_init();
         __AccessControl_init();
@@ -89,11 +94,9 @@ contract EvermoreNFTUpgradeable is Initializable, ERC721RoyaltyUpgradeable, ERC7
         _grantRole(MANAGER, _msgSender());
     }
 
-    function _authorizeUpgrade(address newImplementation)
-        internal
-        onlyRole(ADMIN)
-        override
-    {}
+    function _authorizeUpgrade(
+        address newImplementation
+    ) internal override onlyRole(ADMIN) {}
 
     // NFT MANAGEMENT FUNCTIONS
 
@@ -109,7 +112,12 @@ contract EvermoreNFTUpgradeable is Initializable, ERC721RoyaltyUpgradeable, ERC7
      */
 
     // TODO: make sure the hash corresponds to the correct tokenId and receiver
-    function claim(address _receiver, uint256 _tokenId, bytes32 hash, bytes memory signature) public {
+    function claim(
+        address _receiver,
+        uint256 _tokenId,
+        bytes32 hash,
+        bytes memory signature
+    ) public {
         address _signer = SignatureLibrary.recoverSigner(hash, signature);
         if (!hasRole(MANAGER, _signer) && !hasRole(ADMIN, _signer)) {
             revert InvalidPermissions();
@@ -131,7 +139,11 @@ contract EvermoreNFTUpgradeable is Initializable, ERC721RoyaltyUpgradeable, ERC7
      * The event is stored in the HistoryStorage contract.
      * Only the owner, a manager, an admin, or an event manager can add an event.
      */
-    function addItemData(uint256 _tokenId, string memory _dataURI, bool isCondition) external {
+    function addItemData(
+        uint256 _tokenId,
+        string memory _dataURI,
+        bool isCondition
+    ) external {
         if (!hasRole(EVENT_MANAGER, _msgSender())) {
             _tokenTrusted(_tokenId);
         }
@@ -145,14 +157,21 @@ contract EvermoreNFTUpgradeable is Initializable, ERC721RoyaltyUpgradeable, ERC7
      * Add a batch of items to the NFT collection.
      * Only a manager or an admin can add items.
      */
-    function addItems(string memory _baseUID, string[] memory _uris) public onlyRole(MANAGER) {
+    function addItems(
+        string memory _baseUID,
+        string[] memory _uris
+    ) public onlyRole(MANAGER) {
         // get the next available token ID and set the token URI and UID for each token
         uint256 startTokenId = itemSupply + 1; // Make sure to start at 1
         for (uint256 i = 0; i < _uris.length; i++) {
             uint256 tokenId = startTokenId + i;
             _setTokenURI(tokenId, _uris[i]);
         }
-        uidContract.setUIDTokens(_baseUID, startTokenId, startTokenId + _uris.length - 1);
+        uidContract.setUIDTokens(
+            _baseUID,
+            startTokenId,
+            startTokenId + _uris.length - 1
+        );
         itemSupply += _uris.length;
         emit SupplySet(itemSupply);
     }
@@ -164,7 +183,10 @@ contract EvermoreNFTUpgradeable is Initializable, ERC721RoyaltyUpgradeable, ERC7
      * Update a batch of items in the NFT collection.
      * Only a manager or an admin can update items.
      */
-    function updateItems(uint256[] memory _tokenIds, string[] memory _uris) public onlyRole(MANAGER) {
+    function updateItems(
+        uint256[] memory _tokenIds,
+        string[] memory _uris
+    ) public onlyRole(MANAGER) {
         if (_uris.length != _tokenIds.length) {
             revert InvalidBatchSize();
         }
@@ -195,7 +217,10 @@ contract EvermoreNFTUpgradeable is Initializable, ERC721RoyaltyUpgradeable, ERC7
      * Set the royalty of the NFTs.
      * Only an admin can set the royalty.
      */
-    function setRoyalty(address _recipient, uint96 _percentage) public onlyRole(ADMIN) {
+    function setRoyalty(
+        address _recipient,
+        uint96 _percentage
+    ) public onlyRole(ADMIN) {
         _setDefaultRoyalty(_recipient, _percentage);
     }
 
@@ -221,34 +246,56 @@ contract EvermoreNFTUpgradeable is Initializable, ERC721RoyaltyUpgradeable, ERC7
 
     // Override Functions
 
-    function _burn(uint256 tokenId) internal override(ERC721RoyaltyUpgradeable, ERC721URIStorageBeforeMintUpgradeable) {
+    function _burn(
+        uint256 tokenId
+    )
+        internal
+        override(
+            ERC721RoyaltyUpgradeable,
+            ERC721URIStorageBeforeMintUpgradeable
+        )
+    {
         super._burn(tokenId);
     }
 
-    function _beforeTokenTransfer(address from, address to, uint256 tokenId, uint256 batchSize)
-        internal
-        override
-    {
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 tokenId,
+        uint256 batchSize
+    ) internal override {
         if (batchSize != 1 && from == address(0)) {
-             revert InvalidBatchSize();
+            revert InvalidBatchSize();
         }
-        if (tokenId > itemSupply || tokenId < 1 || bytes(tokenURI(tokenId)).length == 0 ) {
+        if (
+            tokenId > itemSupply ||
+            tokenId < 1 ||
+            bytes(tokenURI(tokenId)).length == 0
+        ) {
             revert InvalidTokenId();
         }
         super._beforeTokenTransfer(from, to, tokenId, batchSize);
     }
 
-    function supportsInterface(bytes4 interfaceId)
+    function supportsInterface(
+        bytes4 interfaceId
+    )
         public
         view
         virtual
-        override(ERC721RoyaltyUpgradeable, AccessControlUpgradeable, ERC721URIStorageBeforeMintUpgradeable)
+        override(
+            ERC721RoyaltyUpgradeable,
+            AccessControlUpgradeable,
+            ERC721URIStorageBeforeMintUpgradeable
+        )
         returns (bool)
     {
         return super.supportsInterface(interfaceId);
     }
 
-    function tokenURI(uint256 tokenId)
+    function tokenURI(
+        uint256 tokenId
+    )
         public
         view
         virtual
@@ -257,5 +304,4 @@ contract EvermoreNFTUpgradeable is Initializable, ERC721RoyaltyUpgradeable, ERC7
     {
         return super.tokenURI(tokenId);
     }
-
 }
