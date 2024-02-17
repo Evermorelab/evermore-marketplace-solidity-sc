@@ -41,7 +41,7 @@ async function main() {
   await evermoreNFT.deployed();
   const nftAddress = evermoreNFT.address;
   console.log("evermoreNFT address:", evermoreNFT.address);
-  await evermoreNFT.setRoyalty(royaltiesAddress, 1000); // 10% royalties
+  //await evermoreNFT.setRoyalty(royaltiesAddress, 1000); // 10% royalties
 
   console.log("Deploying An history Storage...");
   const historyStorageFactory = await ethers.getContractFactory("HistoryStorageUpgradeable");
