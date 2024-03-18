@@ -57,7 +57,12 @@ module.exports = {
     },
     polygon: {
       url: `https://polygon-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY_POLYGON}`,
-      accounts: [METAMASK_PRIVATE_KEY]
+      accounts: [process.env.METAMASK_PRIVATE_KEY_MAINNET]
+    },
+    xrpl: {
+      chainId: 1440002,
+      url: "https://rpc-evm-sidechain.xrpl.org",
+      accounts: [METAMASK_PRIVATE_KEY],
     },
   },
 };
