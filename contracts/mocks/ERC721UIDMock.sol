@@ -2,15 +2,13 @@
 
 pragma solidity ^0.8.21;
 
-import "../ERC721UID.sol";
+import "../deprecated/ERC721UID.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 
 contract ERC721UIDMock is ERC721UID, ERC721 {
-
     uint256 public itemSupply;
-    
-    constructor() ERC721("MockNFT", "MOCK") {
-    }
+
+    constructor() ERC721("MockNFT", "MOCK") {}
 
     function mint(address to, uint256 tokenId) external {
         _safeMint(to, tokenId);
@@ -21,5 +19,4 @@ contract ERC721UIDMock is ERC721UID, ERC721 {
         _setUIDTokens(_tokenUID, startTokenId, startTokenId + _amount - 1);
         itemSupply += _amount;
     }
-
 }

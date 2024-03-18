@@ -1,10 +1,10 @@
 # Evermore marketplace
 
-This is a project that uses [Hardhat](https://hardhat.org/) to develop and deploy smart contracts on the Ethereum blockchain.
+This is a project that uses [Hardhat](https://hardhat.org/) to develop and deploy smart contracts.
 
-It contains 2 smart contracts:
-- EvermoreNFT: to mint new NFTs
-- EvermoreMarketplace: to buy and sell NFTs
+It contains 2 main contracts:
+- Evermore NFT to create and manage NFTs: contracts/upgradeable/EvermoreNFTUpgradeable.sol (depends on other contracts in contracts/upgradeable)
+- Evermore Marketplace to buy and sell NFTs on a secondary market: contracts/Marketplace.sol
 
 ## Prerequisites
 
@@ -44,10 +44,10 @@ ALCHEMY_API_KEY=""
 ```
 # Contract owner address
 OWNER_ADDRESS=""
-QUANTITY=100
-BASE_URI="ipfs://"
 BASE_UID=""
 ROYALTIES_ADDRESS=""
 ```
 
-4. Run `npx hardhat run scripts/deployCollection.js --network polygon_mumbai` for each NFT collection you want to deploy. Make sure you add the deployed address into the products Database. Make sure you setup the correct values in .env before each deployment.
+4. Run `npx hardhat run scripts/deployNFTUpgradable.js --network polygon_mumbai` for each NFT collection you want to deploy. Make sure you add the deployed address into the products Database. Make sure you setup the correct values in .env before each deployment.
+
+5.  Run `npx hardhat run scripts/deployNFTUpgradable.js --network polygon` to deploy the NFT collection on the Polygon mainnet. The NFT collection contract address will be displayed in the console after deployment. Keep it, you will need it for the next step.
