@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.21;
 
-import "../ERC721Lockable.sol";
+import "../deprecated/ERC721Lockable.sol";
 
 contract ERC721LockableMock is ERC721Lockable {
     uint256 public TOTAL_SUUPLY = 100;
@@ -24,5 +24,4 @@ contract ERC721LockableMock is ERC721Lockable {
     function mint(address to, uint256 tokenId) external {
         _safeMint(to, tokenId);
     }
-
 }

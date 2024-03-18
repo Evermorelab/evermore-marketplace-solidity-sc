@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Royalty.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 import "./ERC721UID.sol";
 import "./HistoryStorage.sol";
-import "./SignatureLibrary.sol";
+import "../SignatureLibrary.sol";
 import "./ERC721URIStorageBeforeMint.sol";
 
 error SignatureAlreadyUsed();
@@ -17,8 +17,12 @@ error InvalidSupply();
 error InvalidBatchSize();
 error InvalidPermissions();
 
-contract EvermoreNFT is ERC721Royalty, ERC721URIStorageBeforeMint, ERC721UID, AccessControl {
-
+contract EvermoreNFT is
+    ERC721Royalty,
+    ERC721URIStorageBeforeMint,
+    ERC721UID,
+    AccessControl
+{
     // HISTORY DATA
     // History data for an item corresponding to the item's lifecycle; stored in a separate contract
     // The reading functions are public, but the writing functions are only accessible by the NFT contract
@@ -92,9 +96,7 @@ contract EvermoreNFT is ERC721Royalty, ERC721URIStorageBeforeMint, ERC721UID, Ac
      * Deploy the HistoryStorage contract.
      */
 
-    constructor(
-    )
-        ERC721("Evermore NFT", "EVMNFT"){
+    constructor() ERC721("Evermore NFT", "EVMNFT") {
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
         _grantRole(ADMIN, _msgSender());
         _grantRole(MANAGER, _msgSender());
@@ -116,7 +118,12 @@ contract EvermoreNFT is ERC721Royalty, ERC721URIStorageBeforeMint, ERC721UID, Ac
      */
 
     // TODO: make sure the hash corresponds to the correct tokenId and receiver
-    function claim(address _receiver, uint256 _tokenId, bytes32 hash, bytes memory signature) public {
+    function claim(
+        address _receiver,
+        uint256 _tokenId,
+        bytes32 hash,
+        bytes memory signature
+    ) public {
         _allowedSignClaim(SignatureLibrary.recoverSigner(hash, signature));
         if (signatureUsed[signature]) {
             revert SignatureAlreadyUsed();
@@ -147,7 +154,10 @@ contract EvermoreNFT is ERC721Royalty, ERC721URIStorageBeforeMint, ERC721UID, Ac
      * The condition is stored in the HistoryStorage contract.
      * Only the owner, a manager, an admin, or an event manager can add a condition.
      */
-    function addItemCondition(uint256 _tokenId, string memory _conditionURI) external {
+    function addItemCondition(
+        uint256 _tokenId,
+        string memory _conditionURI
+    ) external {
         _eventTokenTrusted(_tokenId);
         historyStorage.addItemCondition(_tokenId, _conditionURI);
     }
@@ -159,7 +169,10 @@ contract EvermoreNFT is ERC721Royalty, ERC721URIStorageBeforeMint, ERC721UID, Ac
      * Add a batch of items to the NFT collection.
      * Only a manager or an admin can add items.
      */
-    function addItems(string memory _baseUID, string[] memory _uris) public onlyRole(MANAGER) {
+    function addItems(
+        string memory _baseUID,
+        string[] memory _uris
+    ) public onlyRole(MANAGER) {
         // get the next available token ID and set the token URI and UID for each token
         uint256 startTokenId = itemSupply + 1; // Make sure to start at 1
         for (uint256 i = 0; i < _uris.length; i++) {
@@ -178,7 +191,10 @@ contract EvermoreNFT is ERC721Royalty, ERC721URIStorageBeforeMint, ERC721UID, Ac
      * Update a batch of items in the NFT collection.
      * Only a manager or an admin can update items.
      */
-    function updateItems(uint256[] memory _tokenIds, string[] memory _uris) public onlyRole(MANAGER) {
+    function updateItems(
+        uint256[] memory _tokenIds,
+        string[] memory _uris
+    ) public onlyRole(MANAGER) {
         if (_uris.length != _tokenIds.length) {
             revert InvalidBatchSize();
         }
@@ -196,7 +212,10 @@ contract EvermoreNFT is ERC721Royalty, ERC721URIStorageBeforeMint, ERC721UID, Ac
      * Set the royalty of the NFTs.
      * Only an admin can set the royalty.
      */
-    function setRoyalty(address _recipient, uint96 _percentage) public onlyRole(ADMIN) {
+    function setRoyalty(
+        address _recipient,
+        uint96 _percentage
+    ) public onlyRole(ADMIN) {
         _setDefaultRoyalty(_recipient, _percentage);
     }
 
@@ -215,24 +234,30 @@ contract EvermoreNFT is ERC721Royalty, ERC721URIStorageBeforeMint, ERC721UID, Ac
 
     // Override Functions
 
-    function _beforeTokenTransfer(address from, address to, uint256 tokenId, uint256 batchSize)
-        internal
-        override
-    {
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 tokenId,
+        uint256 batchSize
+    ) internal override {
         if (batchSize != 1 && from == address(0)) {
             revert InvalidBatchSize();
         }
-        if (tokenId > itemSupply || tokenId < 1 ) {
+        if (tokenId > itemSupply || tokenId < 1) {
             revert InvalidTokenId();
         }
         super._beforeTokenTransfer(from, to, tokenId, batchSize);
     }
 
-    function _burn(uint256 tokenId) internal override(ERC721Royalty, ERC721URIStorageBeforeMint) {
+    function _burn(
+        uint256 tokenId
+    ) internal override(ERC721Royalty, ERC721URIStorageBeforeMint) {
         super._burn(tokenId);
     }
 
-    function supportsInterface(bytes4 interfaceId)
+    function supportsInterface(
+        bytes4 interfaceId
+    )
         public
         view
         virtual
@@ -242,7 +267,9 @@ contract EvermoreNFT is ERC721Royalty, ERC721URIStorageBeforeMint, ERC721UID, Ac
         return super.supportsInterface(interfaceId);
     }
 
-    function tokenURI(uint256 tokenId)
+    function tokenURI(
+        uint256 tokenId
+    )
         public
         view
         virtual
@@ -251,5 +278,4 @@ contract EvermoreNFT is ERC721Royalty, ERC721URIStorageBeforeMint, ERC721UID, Ac
     {
         return super.tokenURI(tokenId);
     }
-
 }
